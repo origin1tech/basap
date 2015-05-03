@@ -1,0 +1,156 @@
+<div class="container">
+    <div class="view">
+        <div class="pull-right">
+            <a class="btn btn-default btn-menu" href="/option">Options</a>
+            <a class="btn btn-default btn-menu" href="/resource">Resources</a>
+        </div>
+        <h2>Intro to Basap</h2>
+        <div class="alert alert-warning">
+            Basap is an ES6 wrapper class that makes wiring up an <a href="https://angularjs.org/">Angular</a> app
+            trivial. At the same time it exposes all the standard methods ueses, meaning if you need to wire up
+            something directly with the module <strong>basap</strong> stays out of the way. By normalizing routers
+            it makes it simply to switch between routers (ui-router, angular-route and angular-new-router).
+        </div>
+        <h4>Why Basap?</h4>
+        <p>
+            Basap derived from a need to organize <strong>Angular</strong> applications for larger scale projects.
+            This project is a scaled down version of what we use internally. When I say scaled back I do not mean less
+            feature rich. Rather that our core class is so involved that it might be confusing and due to lack of time
+            in documenting it we decided to only release the basics for now. Moving on. If you've done an application
+            of any size you quickly realize that your entire project can't fit in a single page. This poses a problem
+            even with great build tools such as <a href="http://gulpjs.com">Gulp</a> and
+            <a href="http://gruntjs.com">Grunt</a>. This issue is you face either creating some JavaScript Module
+            Pattern, concattening the files or other. You'll find yourself typing <strong>angular.module</strong> a
+            lot which doesn't feel right as not every file should be a module should it? This is the core thing we
+            wanted to avoid and why basap exists for us. You might like it too so here goes...
+        </p>
+        <h4 id="#started">Getting Started</h4>
+        <p>
+            Althought it's not required we strongly urge you to consider using <a href="jspmjs.org">jspm</a>.
+            If you have not installed jspm or want to get more familiar with it first you can install the following
+            via npm to get familiar with its setup <code>npm install jspm-angular-seed</code>. The jspm package manager
+            makes it quite simple when it comes to managing modules. The underlying source is based
+            on systemjs, systemjs-builder and es6-module-loader. If you are not familiar with these you may wish to
+            checkout <a href="https://github.com/systemjs/systemjs">Systemjs</a>. You can install this module via jspm
+            as seen below.
+        </p>
+        <pre>
+            jspm install github:origin1tech/basap
+        </pre>
+        <h4>Importing Basap</h4>
+        <p>
+            To use basap in your application you merely need to import the module into your project. It uses as singleton
+            pattern so each time you import it you will receive the instance that was created. You can ONLY create one
+            instance of basap.
+        </p>
+        <pre>
+            import Basap from 'origin1tech/basap';
+        </pre>
+        <h4>Initializing Basap</h4>
+        <p>
+            To initialize <strong>basap</strong> we call basap along with our application's namespace, its main
+            dependencies and any options we wish to set (see contructor in src/base.js for options).
+        </p>
+        <pre>
+            // NOTE: you can also pass dependencies in your options argument as options.dependencies<br/>
+            var app = basap('myapp',['ngRoute'], {/* options */);
+        </pre>
+        <h4>Basap Areas</h4>
+        <p>
+            We wanted to be able to compartmentalize our apps where the
+            <strong>Area</strong>
+            essentially denoted a <strong>module</strong>. Each area or module should be wired up using defaults from
+            the base module and should be able to be overriden. Services, Factories, Directives all should wire up to
+            its respective Area not to one global module. This ensure decoupling and is important when you're working
+            with multiple devs. It enables creating a module extemporaneous of other team memebers without issue.
+            Areas are common to .NET MVC developers as you'll see this folder structure often in those projects. Each
+            Area then in turn contains components. Although this works well Angular apps work best when controllers,
+            views and so on are in the same folder as a component. An example of a simple file structure is below.
+        </p>
+        <pre>
+            // an area might be something like<br/>
+            // admin, public, customer etc. <br/>
+            /app<br/>
+            &nbsp;&nbsp;/admin<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/users<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/users.html<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/users.js<br/>
+            &nbsp;&nbsp;/public<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;/account<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/login.html<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/login.js<br/>
+        </pre>
+        <p>
+            Creating an area.
+        </p>
+        <pre>
+            // NOTE: you can also pass dependencies in your options argument as options.dependencies<br/>
+            var area = app.area('area_name', [/* dependencies */], { /* options */});
+        </pre>
+        <h4>Decorating an Area</h4>
+        <p>
+            Now that the area is created we can add components to it such as our controllers, services and so on.
+            For all provider types the syntax is the same. You can also add a collection of components by passing
+            the type, its name and the function or object that gets initialized with the area/module.
+        </p>
+        <pre>
+            // NOTE: controllers default to the <strong>controllerAs</strong> syntax.<br/>
+            // This means you call methods as <strong>ctrl.method()</strong><br/>
+            // To ignore controllerAs syntax set options.controllerAs <br/>
+            // to false or if wish to change the variable name you can<br/>
+            // set to another string. Can be done in basap initialization options.<br/><br/>
+            function HomeController() {<br/>
+            &nbsp;&nbsp;this.myMethod = function () { // do something. }}<br/>
+            }<br/><br/>
+            area.controller('HomeController', HomeController);<br/>
+            or<br/>
+            area.component('controller', 'HomeController', HomeController);<br/><br/>
+            // NOTE: all component <strong>types</strong> are singular. So it would be<br/>
+            // controller, service, factory, directive, value, constant<br/>
+            // or decorator. In the case above the "type" is <strong>controller</strong>.
+        </pre>
+        <h4>Normalized Routing</h4>
+        <p>
+            Basap normalizes all three major routers for Angular. That being
+            <a href="https://github.com/angular-ui/ui-router">ui-router</a>,
+            <a href="https://github.com/angular/bower-angular-route">angular-router</a> and the new
+            <a href="https://github.com/angular/router">Angualr 2.x Router</a> which has been backported to Angular 1.4
+            and up. What this means is no matter which router you wish to use the the syntax for adding routes is
+            exactly the same.
+            <strong>Note</strong> the new Angular Router is not quite ready for production. I've spoke with
+            several in the know and most if not all concur. As of writing this there are issues with child routes,
+            clear path as to how to handle start and success routing events (essentially you need to roll your own
+            in your router controller. Consider <code>$rootScope.$watch</code> on the <code>$location.path()</code>)
+            That said it does work with basap and you are welcome to use this project
+            as a quick way to setup a sandbox and play with it.
+        </p>
+        <p>
+            <strong>Creating a basic route.</strong>
+        </p>
+        <pre>
+            area.when('/path', { /* your ngRoute, uiRouter or ngNewRouter options */ });<br/>
+            or<br/>
+            area.when({<br/>
+            &nbsp;&nbsp;'/path': { /* your ngRoute, uiRouter or ngNewRouter options */ }<br/>
+            });<br/>
+            or<br/>
+            area.when('state_name', { /* your uiRouter route options */ });
+        </pre>
+        <h4>Bootstrapping Application</h4>
+        <p>
+            Once you've configured your application you are ready to boostrap angular. This is very simple. Just
+            call the below.
+        </p>
+        <pre>
+            // NOTE: by default your app will be bootstrap to "document" if you wish<br/>
+            // to use a different element you can set options.element. <br/>
+            app.bootstrap();<br/>
+            or<br/>
+            app.bootstrap(/* alt element */);
+        </pre>
+        <h4>What's Next</h4>
+        <p>
+            Step over to the <a href="/option">options</a> page to see more advanced configurations and options.
+        </p>
+    </div>
+</div>

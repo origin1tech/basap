@@ -1,0 +1,155 @@
+<div class="container">
+    <div class="view">
+        <div class="pull-right">
+            <a class="btn btn-default btn-menu" href="/">Home</a>
+        </div>
+        <h2>Advanced Options</h2>
+        <p class="alert alert-warning">
+            Some of the things we'll cover here are setting base paths for templateUrls and route paths. Also how
+            an angular-route or ui-router route can be <strong>componentized</strong>. If you checkout the new
+            <a href="http://github.com/angular/router">Angular 2.x Router</a> you'll notice that this is baked in.
+            We've been doing similar with the previous mentioned routers for some time as this simplifies route
+            definitions and makes it easier to automate route creation as well. Also discussed is how we can extend
+            our area object and access it from $rootScope. Additionally we'll show how you can access $basap itself
+            from the <strong>Base Controller</strong>.
+        </p>
+        <h4>Mapping Paths</h4>
+        <p>
+            You can map templateUrl and route paths independently. This is useful in the case where you have an area
+            and each path should be prefixed with this path. This is nothing more than string concatenation however it
+            is very handy to make code more clear and in short limit key strokes. With templateUrls it is the same thing
+            the templateUrl is joined with the specified base path so that the templates resolve properly. Some examples
+            below. Both are set as options in either basap initialization options or area initialization options.
+        </p>
+        <pre>
+            // see home for importing "basap"<br/>
+            var app = basap('myapp', { routeBase: '/admin', templateBase: '/admin/views' });<br/>
+            or <br/>
+            var area = app.area('admin', { routeBase: '/admin', templateBase: '/admin/views' });<br/>
+        </pre>
+        <p>
+            Consider using the above with the following route.
+        </p>
+        <pre>
+          area.when('/users', { templateUrl: '/users.html' });<br/>
+        </pre>
+        <p>
+            This would result in the route <strong>'/admin/users</strong> and a templateUrl of
+            <strong>'/admin/views/users.html</strong>
+        </p>
+        <h4>Components & Paths</h4>
+        <p>
+            Basap also supports components much like you'd see in the new Angular 2.x router. Accomplishing this is
+            really nothing more than convention and would be simple to implement however its nice to have it baked
+            in and just work. Components are only used in <strong>ui-router</strong> or <strong>angular-route</strong>.
+        </p>
+        <p>
+            <strong>Setting Component Base</strong>
+        </p>
+        <pre>
+            var area = app.area('user', { componentBase: '/components' });
+        </pre>
+        <p>Now consider the following route using the "User" component.</p>
+        <pre>
+            area.when('/user', { component: 'User' });
+        </pre>
+        <p>
+            You'll notice that component is specified with a capital letter. This is because the controller name is
+            <strong>UserController</strong>. If you named your controller userController thne it would be specified
+            in all lower. Continuing on...the above route would then become:
+        </p>
+        <pre>
+               area.when('/user', { templateUrl: '/components/user/user.html });
+        </pre>
+        <p>
+            This also works with nested <strong>children</strong> or named <strong>views</strong> within ui-router.
+        </p>
+        <pre>
+            area.when('/user', { views: {<br/>
+            &nbsp;&nbsp;main: { component: 'User' } <br/>
+            }});<br/>
+            or<br/>
+                  area.when('/user', { children: <br/>
+            &nbsp;&nbsp;[{ component: 'User' }]<br/>
+            });<br/>
+        </pre>
+        <p>
+          <strong>Component Options</strong>
+        </p>
+        <pre>
+            {<br/>
+            &nbsp;&nbsp;// the base path where components are stored, used to prepend templateUrls.<br/>
+            &nbsp;&nbsp;componentBase: '/components', <br/><br/>
+            &nbsp;&nbsp;// the suffix used in naming controllers<br/>
+            &nbsp;&nbsp;controllerSuffix: 'Controller', <br/><br/>
+            &nbsp;&nbsp;// variable name used when defining the controller expression for a route.<br/>
+            &nbsp;&nbsp;controllerAs: 'ctrl', <br/>
+            }
+        </pre>
+        <h4>Disable Area</h4>
+        <p>
+            There may be times where you know an area is broken or simply not ready to be loaded in production. In this
+            case just set the area's option <strong>inactive</strong> to true. This will prevent it from loading.
+        </p>
+        <pre>
+            var area = app.area('user', { inactive: true });
+        </pre>
+        <h4>Base Controller</h4>
+        <p>
+            Because basap inits outside of your Angular app it automatically adds a <strong>Base Controller</strong>
+            to your application. You can extend this controller withing your basap options during initialization. The
+            options to use is as follows:
+        </p>
+        <pre>
+            var app = basap('myapp', { baseExtend: { /* your object of properties/methods for extending */ } });
+        </pre>
+        <p>
+            You can also roll your own base controller and can do so by passing in your controller using the
+            <strong>BaseCtrl</strong> option when initializing your app such as described above with baseExtend.
+        </p>
+        <h4>Access Angular Module</h4>
+        <p>
+            If there is a component or task that requires direct access to the angular module that was created for
+            either your app or area you can do so as show below:
+        </p>
+        <pre>
+            var _module = app.module; // or area.module;<br/>
+            _module.constant('settings', { /* my settings running before other providers */ });
+        </pre>
+        <h4>Variables & Factories</h4>
+        <p>
+            There is one variable exposed to the $rootScope of your application. This is <strong>$area</strong>.
+            Each time your application routes it stores both the previous and the current areas. This object can be
+            accessed withing your view as:
+        </p>
+        <pre>
+            <!-- the below would display the area name -->
+            {{$area.current.name}}
+        </pre>
+        <p>
+            There are two factories that are baked into basap. The are <strong>$basap</strong>, <strong>$routes</strong>
+            $basap is the basap instance. This allows you to pass the instance into one of your services, controllers
+            and so on. $routes is extremely simple. It return the routes of the application. It is important to note
+            that <code>$routes.get();</code> returns an array of arrays. This is because when normalizing for your
+            router it is easier to call <code>router.method.apply(router, route)</code>.
+        </p>
+        <pre>
+            function ($basap){<br/>
+            &nbsp;&nbsp;var areas = $basap.areas; // all basap areas exposed.<br/>
+            }
+        </pre>
+        <h4>Other Options & Source</h4>
+        <p>
+            There are other options withing basap as well as a few others I've yet to implement. In short time is
+            limited so I encourage you to read the source code (located in /src of this project). The comments are
+            plentiful and if you know your way around Angular you should be able to feel your way around.
+        </p>
+        <p>
+            If you have some other questions or find some bug please do fill out an
+            <a href="http://github.com/origin1tech/basap/issues">issue</a>. Feel free to fork it create PR's whatever
+            you wish. Literally whipped this up this afternoon so it is far from battle tested. As time permits
+            we'll add in some additional features that are even more advanced but that are involved enough they
+            demand documenation in order to be successful. In the meantime again read that source!!
+        </p>
+    </div>
+</div>

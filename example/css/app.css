@@ -1,0 +1,75 @@
+
+*{
+    margin: 0;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+h3.logo { margin-top: 10px; }
+
+h4 { margin-top: 32px;}
+
+header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background-color: #434343;
+    line-height: 50px;
+    color: #ccc;
+    overflow: hidden;
+}
+
+.title {
+    color: rgba(0, 0, 0, 0.9);
+    font-size: 135%;
+    text-shadow: 0px 2px 3px rgba(255, 255, 255, 0.1);
+}
+
+#main {
+
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 40px;
+    overflow-y: scroll;
+    position: absolute;
+    width: 100%;
+}
+
+footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 40px;
+    line-height: 40px;
+    border-top: 1px solid #ccc;
+    background-color: #eeeeee;
+    text-align: center;
+    color: #333;
+    overflow: hidden;
+}
+
+pre {
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.view {
+    padding: 24px 0;
+}
+
+.btn-menu {
+    margin-top: 18px;
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}
+

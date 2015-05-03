@@ -1,0 +1,1 @@
+module.exports = require("github:angular/router@0.5.3/dist/router.es5");
