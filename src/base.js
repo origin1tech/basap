@@ -460,7 +460,6 @@ class Base {
                     // store current $area objects
                     // in case the route fails.
                     //origAreas = $rootScope[areaKey];
-                    origAreas = self[areaKey];
 
                     // ensure root scope area object.
                     //$rootScope[areaKey] = $rootScope[areaKey] || {};
@@ -472,7 +471,7 @@ class Base {
 
                     // if no curArea initial
                     // page load set to home area.
-                    if(!curArea[areaKey]){
+                    if(!curArea){
                         curArea = nextArea;
                     }
 
@@ -491,7 +490,7 @@ class Base {
                     origAreas = {
                         previous: curArea,
                         current: nextArea
-                    }
+                    };
 
                 });
 

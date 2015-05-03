@@ -1,10 +1,10 @@
 {
   "name": "basap",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Angular 1.x ES6 base app register module. ",
   "main": "dist/basap.js",
   "scripts": {
-    "test": "test"
+    "test": "gulp build && gulp serve"
   },
   "repository": {
     "type": "git",

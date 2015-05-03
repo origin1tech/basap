@@ -10017,15 +10017,40 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
             options = deps;
             deps = undefined;
           }
+          if (options.dependencies) {
+            deps = options.dependencies;
+            delete options.dependencies;
+          }
           this.name = name;
           this.ns = undefined;
           this.dependencies = deps || [];
-          this.access = undefined;
-          this.routeBase = undefined;
+          this.access = [0];
+          this.baseOverride = false;
+          this.pathBase = undefined;
           this.templateBase = undefined;
+          this.componentBase = undefined;
+          this.controllerSuffix = undefined;
+          this.controllerAs = undefined;
           this.inactive = false;
           if (options)
             angular.extend(this, options);
+          function componentWrapper(type) {
+            return function() {
+              for (var args = [],
+                  $__1 = 0; $__1 < arguments.length; $__1++)
+                args[$__1] = arguments[$__1];
+              args.unshift(type);
+              this.component.apply(this, args);
+            };
+          }
+          this.controller = componentWrapper('controller');
+          this.factory = componentWrapper('factory');
+          this.service = componentWrapper('service');
+          this.directive = componentWrapper('directive');
+          this.filter = componentWrapper('filter');
+          this.constant = componentWrapper('constant');
+          this.value = componentWrapper('value');
+          this.decorator = componentWrapper('decorator');
           Object.defineProperties(this, {
             _initialized: {
               value: false,
@@ -10035,6 +10060,10 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
               value: [],
               writable: true
             },
+            _mappings: {
+              value: [],
+              writeable: true
+            },
             _components: {
               value: [],
               writable: true
@@ -10043,32 +10072,18 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
           return this;
         };
         return ($traceurRuntime.createClass)(Area, {
-          component: function(type, name, component) {
-            var self = this;
-            if (!this.module && !this.module.config)
-              return console.error(("Failed to register component " + name + ", the module is not loaded."));
-            if (angular.isString(name)) {
-              var orig = component;
-              component = {};
-              component[name] = orig;
-            }
-            Object.keys(component).forEach((function(k) {
-              self._components.push([type, k, component[k]]);
-            }));
-          },
-          setBase: function(key, base, obj) {
-            var self = this;
+          setBase: function(base, key, obj) {
             if (arguments.length === 2) {
-              obj = base;
-              base = key;
-              key = undefined;
+              obj = key;
+              key = base;
+              base = undefined;
             }
             function contains(arr, val) {
               return arr.indexOf(val) !== -1;
             }
             function join(b, p) {
               b = b || '';
-              if (b && !/^\//.test(p))
+              if (b && !/^(\.|\/)/.test(p))
                 p = '/' + p;
               if (/\/$/.test(p) && p.length > 1)
                 p = p.slice(0, -1);
@@ -10095,66 +10110,156 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
               return iterateConfig(obj);
             }
           },
+          setMapping: function(type, mapping) {
+            if (this.routerName !== 'ngNewRouter')
+              throw new Error(("Method setMapping is not implemented for " + this.routerName));
+            var map = {
+              controller: 'setCtrlNameMapping',
+              template: 'setTemplateMapping',
+              component: 'setComponentFromCtrlMapping'
+            };
+            if (!map[type]) {
+              var values = Object.keys(map).map((function(k) {
+                return map[k];
+              }));
+              type = this.$basap.contains(values, type, false);
+              if (!type)
+                throw new Error(("Failed to set mapping of type " + type + ", the type is invalid."));
+            }
+            this._mappings.push([type, mapping]);
+          },
+          component: function(type, name, component, componentize) {
+            var self = this;
+            type = type.toLowerCase();
+            if (!this.module && !this.module.config)
+              throw new Error(("Failed to register component " + name + ", the module is not loaded."));
+            if (type === 'controller' && componentize)
+              name = ("" + name + this.controllerSuffix);
+            if (angular.isString(name)) {
+              var orig = component;
+              component = {};
+              component[name] = orig;
+            }
+            Object.keys(component).forEach((function(k) {
+              self._components.push([type, k, component[k]]);
+            }));
+          },
           when: function(path, options) {
-            var $__0 = this;
             var self = this,
-                routeModule = this.routerModuleNormalized;
-            function getKey(key, route) {
-              if (routeModule === 'ngRoute') {
+                routerName = this.routerName,
+                key;
+            function getPath(key, route) {
+              if (routerName === 'ngRoute' || routerName === 'ngNewRouter') {
                 key = route.path || key;
-                key = self.setBase(self.routeBase, key);
-                delete route.path;
+                key = self.setBase(self.pathBase, key);
+                if (routerName !== 'ngNewRouter')
+                  delete route.path;
               }
-              if (routeModule === 'uiRouter' && route.state !== undefined) {
+              if (routerName === 'uiRouter' && route.state !== undefined) {
                 key = route.state || key;
                 delete route.state;
               }
               return key;
             }
-            function getArea() {
-              return this;
+            function generateComponent(name, base, opts) {
+              if (arguments.length === 2) {
+                opts = base;
+                base = name;
+                name = undefined;
+              }
+              name = opts.component;
+              if (name) {
+                opts.templateUrl = (name + "/" + name + ".html");
+                if (self.$basap.lowerPaths !== false)
+                  opts.templateUrl = opts.templateUrl.toLowerCase();
+                opts.controller = ("" + name + self.controllerSuffix);
+                if (self.controllerAs !== undefined)
+                  opts.controller = (opts.controller + " as " + self.controllerAs);
+                opts = self.setBase(base, ['templateUrl'], opts);
+              }
+              return opts;
+            }
+            function iterateUiComponents(base, obj) {
+              for (var prop in obj) {
+                if (obj.hasOwnProperty(prop)) {
+                  if (prop === 'children') {
+                    obj[prop].forEach((function(c, i) {
+                      obj[prop][i] = iterateUiComponents(base, c);
+                    }));
+                  }
+                  if (angular.isObject(obj[prop])) {
+                    iterateUiComponents(base, obj[prop]);
+                  }
+                }
+              }
+              if (obj.component) {
+                obj = generateComponent(base, obj);
+              }
+              return obj;
             }
             function normalizeOptions(opts) {
-              opts = self.setBase(['url', 'redirectTo'], self.routeBase, opts);
-              opts = self.setBase(['templateUrl'], self.templateBase, opts);
+              opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
+              if (routerName !== 'ngNewRouter') {
+                var compBase = self.componentBase || self.templateBase;
+                if (!angular.isString(compBase))
+                  throw new Error(("To use components with " + routerName) + " componentBase or templateBase must be valid string.");
+                if (!self.$basap.contains(Object.keys(opts), ['views', 'children', 'component'])) {
+                  opts = self.setBase(self.templateBase, ['templateUrl'], opts);
+                } else {
+                  if (routerName === 'ngRoute') {
+                    opts = generateComponent(compBase, opts);
+                  } else {
+                    opts = iterateUiComponents(compBase, opts);
+                  }
+                }
+              }
               return opts;
+            }
+            function normalizeRouteArray(key, options) {
+              if (routerName === 'ngNewRouter') {
+                options.path = key;
+                return [options];
+              } else {
+                return [key, options];
+              }
             }
             if (angular.isObject(path) && !angular.isArray(path)) {
               Object.keys(path).forEach((function(r) {
-                var route = path[r],
-                    key = getKey(r, route);
-                route[self.routeAreaKey] = getArea.bind($__0);
-                self._routes.push([key, normalizeOptions(route)]);
+                var route = path[r];
+                key = getPath(r, route);
+                route[self.areaKey] = self.name;
+                if (self.$basap.lowerPaths !== false)
+                  key = key.toLowerCase();
+                self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
               }));
             } else if (angular.isArray(path)) {
               path.forEach((function(route) {
-                var key = getKey(null, route);
+                key = getPath(null, route);
                 if (key) {
-                  route[self.routeAreaKey] = getArea.bind($__0);
-                  self._routes.push([key, normalizeOptions(route)]);
+                  route[self.areaKey] = self.name;
+                  if (self.$basap.lowerPaths !== false)
+                    key = key.toLowerCase();
+                  self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
                 }
               }));
             } else {
-              if (!angular.isObject(options)) {
-                console.error(("Route " + name + " could not be registered, the configuration is missing or invalid."));
+              if (angular.isObject(options)) {
+                key = getPath(path, options);
+                options[self.areaKey] = self.name;
+                if (self.$basap.lowerPaths !== false)
+                  key = key.toLowerCase();
+                self._routes.push(normalizeRouteArray(key, normalizeOptions(options)));
               } else {
-                var key = getKey(path, options);
-                options[self.routeAreaKey] = getArea.bind(this);
-                self._routes.push([key, normalizeOptions(options)]);
+                throw new Error(("Route " + path + " could not be registered, the configuration is missing or invalid."));
               }
             }
             return this;
           },
           otherwise: function(path) {
-            function getArea() {
-              return this;
-            }
             if (angular.isString(path))
-              path = this.setBase(this.routeBase, path);
+              path = this.setBase(this.pathBase, path);
             if (angular.isObject(path) && path.redirectTo)
-              path.redirectTo = this.setBase(this.routeBase, path.redirectTo);
-            if (angular.isObject(path))
-              path[this.routeAreaKey] = getArea.bind(this);
+              path.redirectTo = this.setBase(this.pathBase, path.redirectTo);
             this._routes.push(['otherwise', path]);
             return this;
           },
@@ -10169,46 +10274,40 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
             return this;
           },
           init: function() {
+            if (this._initialized)
+              throw new Error((this.ns + " attempted to init but has already been initialized."));
             var self = this,
                 _module = this.module;
-            if (this._initialized) {
-              console.error((this.ns + " attempted to init but has already been initialized."));
-              return this;
-            }
-            function config($controllerProvider, $compileProvider, $filterProvider, $provide, routeProvider, otherwiseProvider) {
-              var providers = {
-                controller: $controllerProvider.register,
-                factory: $provide.factory,
-                service: $provide.service,
-                directive: $compileProvider.directive,
-                filter: $filterProvider.register,
-                value: $provide.value,
-                constant: $provide.constant,
-                decorator: $provide.decorator
-              };
+            function config($injector) {
+              var providers = self.$basap.providers($injector);
+              if (self.routerName === 'ngNewRouter') {
+                self._mappings.forEach((function(m) {
+                  var type = m.shift();
+                  providers.loader[type].apply(null, m);
+                }));
+              }
               self._components.forEach((function(k) {
                 var type = k[0];
-                if (angular.isFunction(k[2]) && type === 'controller') {
-                  k[2] = k[2].bind(self);
-                }
                 if (angular.isString(type) && providers[type]) {
                   k.shift();
                   providers[type].apply(null, k);
                 } else {
-                  console.error(("Component type " + type + " invalid configuration or not supported."));
+                  throw new Error(("Component type " + type + " invalid configuration or not supported."));
                 }
               }));
-              self._routes.forEach((function(k) {
-                var key = k[0];
-                if (key === 'otherwise') {
-                  k.shift();
-                  otherwiseProvider[self.routerConfig.otherwiseMethod].apply(otherwiseProvider, k);
-                } else {
-                  routeProvider[self.routerConfig.whenMethod].apply(routeProvider, k);
-                }
-              }));
+              if (self.routerName === 'ngRoute' || self.routerName === 'uiRouter') {
+                self._routes.forEach((function(r) {
+                  var key = r[0];
+                  if (key === 'otherwise') {
+                    r.shift();
+                    providers.otherwise[self.routerConfig.otherwiseMethod].apply(providers.otherwise, r);
+                  } else {
+                    providers.route[self.routerConfig.whenMethod].apply(providers.route, r);
+                  }
+                }));
+              }
             }
-            config.$inject = ['$controllerProvider', '$compileProvider', '$filterProvider', '$provide', self.routerConfig.provider, self.routerConfig.otherwiseProvider];
+            config.$inject = ['$injector'];
             _module.config(config);
             this._initialized = true;
             return this;
@@ -10234,22 +10333,16 @@ System.register("src/configs", [], function($__export) {
           whenMethod: 'when',
           otherwiseMethod: 'otherwise',
           startEvent: '$routeChangeStart',
-          errorEvent: '$routeChangeError'
-        },
-        aiRouter: {
-          provider: '$routeProvider',
-          otherwiseProvider: '$routeProvider',
-          whenMethod: 'state',
-          otherwiseMethod: 'otherwise',
-          startEvent: '$routeChangeStart',
+          successEvent: '$routeChangeSuccess',
           errorEvent: '$routeChangeError'
         },
         uiRouter: {
           provider: '$stateProvider',
           otherwiseProvider: '$urlRouterProvider',
-          whenMethod: 'when',
+          whenMethod: 'state',
           otherwiseMethod: 'otherwise',
           startEvent: '$stateChangeStart',
+          successEvent: '$stateChangeSuccess',
           errorEvent: '$stateChangeError'
         },
         ngNewRouter: {}
@@ -10259,20 +10352,94 @@ System.register("src/configs", [], function($__export) {
   };
 });
 
-System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", "src/configs"], function($__export) {
+System.register("src/events", ["github:angular/bower-angular@1.3.15"], function($__export) {
+  "use strict";
+  var __moduleName = "src/events";
+  var angular,
+      EventFact;
+  return {
+    setters: [function($__m) {
+      angular = $__m.default;
+    }],
+    execute: function() {
+      EventFact = (function() {
+        var EventFact = function EventFact($rootScope, $basap) {
+          return this;
+        };
+        return ($traceurRuntime.createClass)(EventFact, {}, {});
+      }());
+      EventFact.$inject = ['$rootScope', '$basap'];
+      $__export('default', EventFact);
+    }
+  };
+});
+
+System.register("src/baseCtrl", [], function($__export) {
+  "use strict";
+  var __moduleName = "src/baseCtrl";
+  var BaseCtrl;
+  return {
+    setters: [],
+    execute: function() {
+      BaseCtrl = (function() {
+        var BaseCtrl = function BaseCtrl($rootScope, $basap) {
+          var extend = {};
+          if ($basap.baseExtend)
+            extend = $basap.baseExtend;
+          delete $basap.baseExtend;
+          angular.extend(this, $basap, extend);
+          if (this.routerName === 'ngNewRouter') {
+            this.canActivate = this.canActivate || function() {};
+            this.canDeactivate = this.canDeactivate || function() {};
+            this.canReactivate = this.canReactivate || function() {};
+          }
+        };
+        return ($traceurRuntime.createClass)(BaseCtrl, {}, {});
+      }());
+      BaseCtrl.$inject = ['$rootScope', '$basap'];
+      $__export('default', BaseCtrl);
+    }
+  };
+});
+
+System.register("src/routeCtrl", [], function($__export) {
+  "use strict";
+  var __moduleName = "src/routeCtrl";
+  var RouteCtrl;
+  return {
+    setters: [],
+    execute: function() {
+      RouteCtrl = (function() {
+        var RouteCtrl = function RouteCtrl($rootScope, $location, $router, $routes) {
+          $rootScope.$watch(function() {
+            return $location.path();
+          }, function(newVal, oldVal) {
+            var nextPath = newVal;
+          });
+        };
+        return ($traceurRuntime.createClass)(RouteCtrl, {}, {});
+      }());
+      RouteCtrl.$inject = ['$rootScope', '$location', '$router', '$routes'];
+      $__export('default', RouteCtrl);
+    }
+  };
+});
+
+System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", "src/configs", "src/events", "src/baseCtrl", "src/routeCtrl"], function($__export) {
   "use strict";
   var __moduleName = "src/base";
   var angular,
       Area,
       configs,
+      EventFact,
+      BaseCtrl,
+      RouteCtrl,
       Base;
   function get(ns, deps, options) {
     var instance = Base.instance;
     if (!instance) {
       instance = new Base(ns, deps, options);
       Base.constructor = null;
-      if (instance.globalize !== false)
-        window[instance.globalName || '$app'] = instance;
     }
     return instance;
   }
@@ -10283,16 +10450,34 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
       Area = $__m.default;
     }, function($__m) {
       configs = $__m.default;
+    }, function($__m) {
+      EventFact = $__m.default;
+    }, function($__m) {
+      BaseCtrl = $__m.default;
+    }, function($__m) {
+      RouteCtrl = $__m.default;
     }],
     execute: function() {
       Base = (function() {
         var Base = function Base(ns, deps, options) {
-          function normalizeRouterModule(m) {
+          function normalizeRouter(m) {
             if (m.indexOf('.') !== -1) {
               m = m.split('.');
+              if (angular.isArray(m))
+                return (m[0] + m[1].charAt(0).toUpperCase() + m[1].slice(1));
               return m + m.charAt(0).toUpperCase() + m.slice(1);
             }
             return m;
+          }
+          function lookupRouter(arr) {
+            var filtered = arr.filter(function(a) {
+              return /^(ngRoute|ngNewRouter|ui\.router)$/.test(a);
+            });
+            if (filtered.length > 1)
+              throw new Error(("Only one router can be initialized\n            attempted to initialize with " + filtered.join(', ')));
+            if (!filtered || !filtered.length)
+              throw new Error('Attempted to initialize using router module of undefined. ' + 'Supported Modules: ngRoute, ngNewRouter, ui.router');
+            return normalizeRouter(filtered[0]);
           }
           if (!ns)
             throw new Error('Cannot initialize Base using namespace of undefined.');
@@ -10300,27 +10485,84 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
             options = deps;
             deps = undefined;
           }
-          this.globalize = undefined;
-          this.globalName = '$app';
+          if (options.dependencies) {
+            deps = options.dependencies;
+            delete options.dependencies;
+          }
           this.ns = ns || 'app';
           this.dependencies = deps || [];
+          this.module = angular.module(this.ns, this.dependencies);
           this.element = document;
           this.areas = {};
           this.html5Mode = undefined;
-          this.access = [0];
-          this.routerModule = 'ngRoute';
-          this.routeAreaKey = '$area';
           this.routeBase = '';
           this.templateBase = '';
+          this.componentBase = '/components';
+          this.lowerPaths = undefined;
+          this.controllerSuffix = 'Controller';
+          this.controllerAs = 'ctrl';
+          this.globalize = false;
+          this.BaseCtrl = BaseCtrl;
+          this.baseExtend = undefined;
+          this.baseElement = 'html';
+          this.routerElement = 'body';
           angular.extend(this, options);
-          var normalizedRouterModuleName = normalizeRouterModule(this.routerModule);
-          this.routerConfig = angular.extend(configs[normalizedRouterModuleName], this.routerConfig);
-          this.routerModuleNormalized = normalizedRouterModuleName;
-          if (!this.routerModule)
-            throw new Error('Cannot initialize app using route module of undefined.');
+          if (this.globalize) {
+            this.globalName = ("$" + this.ns);
+            window[this.globalName] = this;
+          }
+          if (this.BaseCtrl) {
+            var elem = this.query(this.baseElement);
+            if (elem)
+              elem.setAttribute('ng-controller', ("BaseCtrl as " + this.ns));
+          }
+          this.routerName = lookupRouter(this.dependencies);
+          if (this.routerName === 'ngNewRouter') {
+            if (console && console.warn) {
+              console.warn((this.routerName + " is supported only as preview, should not be used in") + "production. until more stable.");
+            }
+          }
+          if (this.routerName === 'ngNewRouter' && this.routerElement) {
+            var elem$__1 = this.query(this.baseElement);
+            if (elem$__1)
+              elem$__1.setAttribute('ng-controller', 'RouteCtrl as router');
+          }
+          this.routerConfig = angular.extend(configs[this.routerName], this.routerConfig);
+          this.controllerSuffix = this.controllerSuffix || 'Controller';
+          this.areaKey = '$area';
           Base.instance = this;
         };
         return ($traceurRuntime.createClass)(Base, {
+          tryInject: function(injector, provider) {
+            try {
+              return injector.get(provider);
+            } catch (ex) {
+              ex.message = ("Failed to inject " + provider + ": " + ex.message);
+              throw ex;
+            }
+          },
+          contains: function(arr, values, bool) {
+            var self = this;
+            bool = bool === undefined ? true : bool;
+            if (!(values instanceof Array)) {
+              var idx = arr.indexOf(values);
+              if (bool)
+                return idx !== -1;
+              return arr[idx];
+            } else {
+              var result = undefined;
+              values.forEach((function(v) {
+                if (!result) {
+                  result = self.contains(arr, v, bool);
+                }
+              }));
+              return result;
+            }
+          },
+          query: function(elem, all) {
+            var selector = all ? 'querySelectorAll' : 'querySelector';
+            return document[selector](elem);
+          },
           async: function(arr, fn, pre, done) {
             var i = 0,
                 delay = 0;
@@ -10342,22 +10584,58 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
               setTimeout(iter, delay);
             }, 0);
           },
-          area: function(name, area) {
+          routes: function(area) {
             var self = this,
-                globalAreaOptsKeys = ['routerModuleNormalized', 'routeAreaKey', 'routerConfig', 'access', 'inherit', 'routeBase', 'templateBase'];
+                routes = [];
+            Object.keys(this.areas).forEach((function(a) {
+              var _routes = self.areas[a]._routes;
+              if (!area || a === area)
+                routes = routes.concat(_routes);
+            }));
+            return routes;
+          },
+          providers: function(injector) {
+            if (!injector)
+              return ;
+            var providers = {
+              location: this.tryInject(injector, '$locationProvider'),
+              controller: this.tryInject(injector, '$controllerProvider').register,
+              factory: this.tryInject(injector, '$provide').factory,
+              service: this.tryInject(injector, '$provide').service,
+              directive: this.tryInject(injector, '$compileProvider').directive,
+              filter: this.tryInject(injector, '$filterProvider').register,
+              value: this.tryInject(injector, '$provide').value,
+              constant: this.tryInject(injector, '$provide').constant,
+              decorator: this.tryInject(injector, '$provide').decorator
+            };
+            if (this.routerName === 'ngRoute' || this.routerName === 'uiRouter') {
+              providers.route = this.tryInject(injector, this.routerConfig.provider);
+              providers.otherwise = this.tryInject(injector, this.routerConfig.otherwiseProvider);
+            } else {
+              providers.loader = this.tryInject(injector, '$componentLoaderProvider');
+            }
+            return providers;
+          },
+          area: function(name, deps, options) {
+            var self = this,
+                globalAreaOptsKeys = ['routerName', 'routerConfig', 'access', 'inherit', 'componentBase', 'routeBase', 'templateBase', 'controllerSuffix', 'controllerAs', 'areaKey'],
+                area;
+            if (angular.isString(name) && arguments.length === 1) {
+              if (!this.areas[name])
+                throw new Error(("The area " + name + " could not be found."));
+              return this.areas[name];
+            }
+            if (arguments.length === 2 && angular.isObject(deps) && !angular.isArray(deps)) {
+              options = deps;
+              deps = undefined;
+            }
             var regex = new RegExp('^(app|' + this.ns + ')', 'i');
             if (angular.isString(name))
               name = name.replace(regex, '');
-            if (area === true)
-              area = {};
-            if (angular.isString(name) && arguments.length === 1) {
-              if (!this.areas[name])
-                return console.error(("The area " + name + " could not be found."));
-              return this.areas[name];
-            }
+            options = options || {};
             if (this.areas[name])
-              return console.error(("Failed to register area " + name + " duplicate detected."));
-            area = new Area(name, area);
+              throw new Error(("Failed to register area " + name + " duplicate detected."));
+            area = new Area(name, options);
             globalAreaOptsKeys.forEach((function(k) {
               if (area[k] === undefined)
                 area[k] = self[k];
@@ -10372,101 +10650,85 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
             if (!area.inactive)
               this.dependencies.push(area.ns);
             area.module = angular.module(area.ns, area.dependencies);
-            area.$app = this;
+            area.$basap = this;
+            area.getRoutes = function getRoutes(all) {
+              var area = all ? area.name : undefined;
+              return self.routes(area);
+            };
             this.areas[area.name] = area;
             return area;
           },
           bootstrap: function(element) {
             var self = this,
-                _module;
+                _module = this.module;
             element = element || this.element;
-            function config($locationProvider) {
+            function config($injector) {
+              var providers = self.providers($injector);
               var mode = self.html5Mode !== undefined ? self.html5Mode : true;
-              $locationProvider.html5Mode(mode);
+              providers.location.html5Mode(mode);
             }
-            config.$inject = ['$locationProvider'];
+            config.$inject = ['$injector'];
             function run($injector, $rootScope) {
-              var cur,
-                  next,
-                  curArea,
-                  nextArea,
-                  routerName;
-              next = 1;
-              cur = 2;
-              routerName = self.routerModuleNormalized;
-              if (routerName === 'uiRouter')
-                cur = 3;
-              var router,
-                  helpers;
-              helpers = {};
-              function lookupRoute(path, routes) {
-                var result;
-                if (routerName === 'ngRoute') {
-                  Object.keys(routes).forEach((function(r) {
-                    var route = routes[r],
-                        match = route.regexp.test(path);
-                    if (!result && match)
-                      result = route;
-                  }));
-                }
-                if (routerName === 'uiRouter') {
-                  Object.keys(routes).forEach((function(r) {}));
-                }
-              }
-              function getGoto(router) {
-                return function goto(path, locals) {
-                  var nextRoute;
-                  if (locals) {
-                    nextRoute = lookupRoute(path, router.routes);
+              if (self.routerName !== 'ngNewRouter') {
+                var cur = 2,
+                    next = 1,
+                    areaKey = self.areaKey,
+                    curArea,
+                    nextArea,
+                    origAreas;
+                if (self.routerName === 'uiRouter')
+                  cur = 3;
+                $rootScope.$on(configs[self.routerName].startEvent, function() {
+                  self[areaKey] = self[areaKey] || {};
+                  curArea = arguments[cur] ? arguments[cur] : undefined;
+                  nextArea = arguments[next] ? arguments[next] : undefined;
+                  if (!curArea) {
+                    curArea = nextArea;
                   }
-                };
-              }
-              switch (routerName) {
-                case 'ngRoute':
-                  router = $injector.get('$route');
-                  router.navigate = $injector.get('$location');
-                  helpers.reload = router.reload;
-                  helpers.goto = getGoto(router);
-                  break;
-                case 'uiRouter':
-                  router = $injector.get('$state');
-                  router.navigate = router.go;
-                  helpers.reload = router.reload;
-                  helpers.goto = getGoto(router);
-                  break;
-                case 'aiRouter':
-                  router = $injector.get('$route');
-                  router.navigate = $injector.get('$location');
-                  helpers.reload = router.reload;
-                  helpers.goto = getGoto(router);
-                  break;
-                case 'ngNewRouter':
-                  console.error('ngNewRouter is not implemented.');
-                  break;
-                default:
-                  console.error(("Cannot inject helpers using unsupported router of type " + self.ModuleNormalized));
-              }
-              console.log(router);
-              $rootScope.$on(self.routerConfig.startEvent, function() {
-                $rootScope[self.routeAreaKey] = $rootScope[self.routeAreaKey] || {};
-                curArea = arguments[cur] ? arguments[cur][self.routeAreaKey] : undefined;
-                nextArea = arguments[next] ? arguments[next][self.routeAreaKey] : undefined;
-                if (nextArea) {
-                  nextArea = $rootScope[self.routeAreaKey].current = nextArea();
-                  $rootScope[self.routeAreaKey] = angular.extend(nextArea, helpers);
-                }
-                $rootScope[self.routeAreaKey].previous = curArea ? curArea() : nextArea;
-              });
+                  curArea = self.areas[curArea[areaKey]];
+                  nextArea = self.areas[nextArea[areaKey]];
+                  self[areaKey].previous = curArea;
+                  self[areaKey].current = nextArea;
+                  origAreas = {
+                    previous: curArea,
+                    current: nextArea
+                  };
+                });
+                $rootScope.$on(configs[self.routerName].successEvent, function() {
+                  origAreas = undefined;
+                });
+                $rootScope.$on(configs[self.routerName].errorEvent, function() {
+                  self[areaKey] = origAreas;
+                });
+              } else {}
             }
             run.$inject = ['$injector', '$rootScope'];
-            _module = this.module = angular.module(self.ns, self.dependencies);
+            function RouteFact() {
+              var factory = {
+                get: function get(area) {
+                  return self.routes(area);
+                },
+                flatten: function flatten() {}
+              };
+              return factory;
+            }
+            _module.factory('$routes', RouteFact);
+            if (self.routerName === 'ngNewRouter') {
+              _module.controller('RouteCtrl', RouteCtrl);
+            }
+            function BasapFact() {
+              return self;
+            }
+            _module.factory('$basap', BasapFact);
+            _module.factory('EventFact', EventFact);
+            if (this.BaseCtrl)
+              _module.controller('BaseCtrl', this.BaseCtrl);
             var areaKeys = Object.keys(self.areas);
             function fn(item) {
               var area = self.areas[item];
               if (area)
                 area.init();
             }
-            ;
             self.async(areaKeys, fn);
             _module.config(config).run(run);
             angular.element(document).ready(function() {
