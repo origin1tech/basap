@@ -39,6 +39,8 @@ gulp.task('lint', function () {
 });
 
 // bundle using systemjs-builder
+// this is here as an example of how
+// to build up your application.
 gulp.task('bundle', ['clean'], function (cb) {
 
     var builder = new Builder();
@@ -50,12 +52,12 @@ gulp.task('bundle', ['clean'], function (cb) {
     builder.loadConfig(configFile)
         .then(function () {
             builder.config({baseURL: path.resolve('./')});
-            builder.build('src/base', './dist/basap.js', opts)
+            builder.build('example/app', './dist/app.js', opts)
                 .then(function () {
-                    builder.buildSFX('src/base', './dist/basap.sfx.js', opts)
+                    builder.buildSFX('example/app', './dist/app.sfx.js', opts)
                         .then(function() {
                             opts.runtime = true;
-                            builder.buildSFX('src/base', './dist/basap.runtime.js', opts)
+                            builder.buildSFX('example/app', './dist/app.runtime.js', opts)
                                 .then(function() {
                                     return cb();
                                 })

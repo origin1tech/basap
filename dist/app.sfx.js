@@ -3786,7 +3786,7 @@ System.get("traceur-runtime@0.0.87/src/runtime/polyfills/polyfills.js" + '');
   System.register(...);
 }); */
 
-(['src/base'], function(System) {
+(['example/app'], function(System) {
 
 System.register("github:angular/bower-angular@1.3.15/angular", [], false, function(__require, __exports, __module) {
   System.get("@@global-helpers").prepareGlobal(__module.id, []);
@@ -13781,11 +13781,321 @@ System.register("github:angular/bower-angular@1.3.15/angular", [], false, functi
   return System.get("@@global-helpers").retrieveGlobal(__module.id, "angular");
 });
 
+System.register("github:angular/bower-angular-route@1.3.15/angular-route", ["github:angular/bower-angular@1.3.15"], false, function(__require, __exports, __module) {
+  System.get("@@global-helpers").prepareGlobal(__module.id, ["github:angular/bower-angular@1.3.15"]);
+  (function() {
+    "format global";
+    "deps angular";
+    (function(window, angular, undefined) {
+      'use strict';
+      var ngRouteModule = angular.module('ngRoute', ['ng']).provider('$route', $RouteProvider),
+          $routeMinErr = angular.$$minErr('ngRoute');
+      function $RouteProvider() {
+        function inherit(parent, extra) {
+          return angular.extend(Object.create(parent), extra);
+        }
+        var routes = {};
+        this.when = function(path, route) {
+          var routeCopy = angular.copy(route);
+          if (angular.isUndefined(routeCopy.reloadOnSearch)) {
+            routeCopy.reloadOnSearch = true;
+          }
+          if (angular.isUndefined(routeCopy.caseInsensitiveMatch)) {
+            routeCopy.caseInsensitiveMatch = this.caseInsensitiveMatch;
+          }
+          routes[path] = angular.extend(routeCopy, path && pathRegExp(path, routeCopy));
+          if (path) {
+            var redirectPath = (path[path.length - 1] == '/') ? path.substr(0, path.length - 1) : path + '/';
+            routes[redirectPath] = angular.extend({redirectTo: path}, pathRegExp(redirectPath, routeCopy));
+          }
+          return this;
+        };
+        this.caseInsensitiveMatch = false;
+        function pathRegExp(path, opts) {
+          var insensitive = opts.caseInsensitiveMatch,
+              ret = {
+                originalPath: path,
+                regexp: path
+              },
+              keys = ret.keys = [];
+          path = path.replace(/([().])/g, '\\$1').replace(/(\/)?:(\w+)([\?\*])?/g, function(_, slash, key, option) {
+            var optional = option === '?' ? option : null;
+            var star = option === '*' ? option : null;
+            keys.push({
+              name: key,
+              optional: !!optional
+            });
+            slash = slash || '';
+            return '' + (optional ? '' : slash) + '(?:' + (optional ? slash : '') + (star && '(.+?)' || '([^/]+)') + (optional || '') + ')' + (optional || '');
+          }).replace(/([\/$\*])/g, '\\$1');
+          ret.regexp = new RegExp('^' + path + '$', insensitive ? 'i' : '');
+          return ret;
+        }
+        this.otherwise = function(params) {
+          if (typeof params === 'string') {
+            params = {redirectTo: params};
+          }
+          this.when(null, params);
+          return this;
+        };
+        this.$get = ['$rootScope', '$location', '$routeParams', '$q', '$injector', '$templateRequest', '$sce', function($rootScope, $location, $routeParams, $q, $injector, $templateRequest, $sce) {
+          var forceReload = false,
+              preparedRoute,
+              preparedRouteIsUpdateOnly,
+              $route = {
+                routes: routes,
+                reload: function() {
+                  forceReload = true;
+                  $rootScope.$evalAsync(function() {
+                    prepareRoute();
+                    commitRoute();
+                  });
+                },
+                updateParams: function(newParams) {
+                  if (this.current && this.current.$$route) {
+                    newParams = angular.extend({}, this.current.params, newParams);
+                    $location.path(interpolate(this.current.$$route.originalPath, newParams));
+                    $location.search(newParams);
+                  } else {
+                    throw $routeMinErr('norout', 'Tried updating route when with no current route');
+                  }
+                }
+              };
+          $rootScope.$on('$locationChangeStart', prepareRoute);
+          $rootScope.$on('$locationChangeSuccess', commitRoute);
+          return $route;
+          function switchRouteMatcher(on, route) {
+            var keys = route.keys,
+                params = {};
+            if (!route.regexp)
+              return null;
+            var m = route.regexp.exec(on);
+            if (!m)
+              return null;
+            for (var i = 1,
+                len = m.length; i < len; ++i) {
+              var key = keys[i - 1];
+              var val = m[i];
+              if (key && val) {
+                params[key.name] = val;
+              }
+            }
+            return params;
+          }
+          function prepareRoute($locationEvent) {
+            var lastRoute = $route.current;
+            preparedRoute = parseRoute();
+            preparedRouteIsUpdateOnly = preparedRoute && lastRoute && preparedRoute.$$route === lastRoute.$$route && angular.equals(preparedRoute.pathParams, lastRoute.pathParams) && !preparedRoute.reloadOnSearch && !forceReload;
+            if (!preparedRouteIsUpdateOnly && (lastRoute || preparedRoute)) {
+              if ($rootScope.$broadcast('$routeChangeStart', preparedRoute, lastRoute).defaultPrevented) {
+                if ($locationEvent) {
+                  $locationEvent.preventDefault();
+                }
+              }
+            }
+          }
+          function commitRoute() {
+            var lastRoute = $route.current;
+            var nextRoute = preparedRoute;
+            if (preparedRouteIsUpdateOnly) {
+              lastRoute.params = nextRoute.params;
+              angular.copy(lastRoute.params, $routeParams);
+              $rootScope.$broadcast('$routeUpdate', lastRoute);
+            } else if (nextRoute || lastRoute) {
+              forceReload = false;
+              $route.current = nextRoute;
+              if (nextRoute) {
+                if (nextRoute.redirectTo) {
+                  if (angular.isString(nextRoute.redirectTo)) {
+                    $location.path(interpolate(nextRoute.redirectTo, nextRoute.params)).search(nextRoute.params).replace();
+                  } else {
+                    $location.url(nextRoute.redirectTo(nextRoute.pathParams, $location.path(), $location.search())).replace();
+                  }
+                }
+              }
+              $q.when(nextRoute).then(function() {
+                if (nextRoute) {
+                  var locals = angular.extend({}, nextRoute.resolve),
+                      template,
+                      templateUrl;
+                  angular.forEach(locals, function(value, key) {
+                    locals[key] = angular.isString(value) ? $injector.get(value) : $injector.invoke(value, null, null, key);
+                  });
+                  if (angular.isDefined(template = nextRoute.template)) {
+                    if (angular.isFunction(template)) {
+                      template = template(nextRoute.params);
+                    }
+                  } else if (angular.isDefined(templateUrl = nextRoute.templateUrl)) {
+                    if (angular.isFunction(templateUrl)) {
+                      templateUrl = templateUrl(nextRoute.params);
+                    }
+                    templateUrl = $sce.getTrustedResourceUrl(templateUrl);
+                    if (angular.isDefined(templateUrl)) {
+                      nextRoute.loadedTemplateUrl = templateUrl;
+                      template = $templateRequest(templateUrl);
+                    }
+                  }
+                  if (angular.isDefined(template)) {
+                    locals['$template'] = template;
+                  }
+                  return $q.all(locals);
+                }
+              }).then(function(locals) {
+                if (nextRoute == $route.current) {
+                  if (nextRoute) {
+                    nextRoute.locals = locals;
+                    angular.copy(nextRoute.params, $routeParams);
+                  }
+                  $rootScope.$broadcast('$routeChangeSuccess', nextRoute, lastRoute);
+                }
+              }, function(error) {
+                if (nextRoute == $route.current) {
+                  $rootScope.$broadcast('$routeChangeError', nextRoute, lastRoute, error);
+                }
+              });
+            }
+          }
+          function parseRoute() {
+            var params,
+                match;
+            angular.forEach(routes, function(route, path) {
+              if (!match && (params = switchRouteMatcher($location.path(), route))) {
+                match = inherit(route, {
+                  params: angular.extend({}, $location.search(), params),
+                  pathParams: params
+                });
+                match.$$route = route;
+              }
+            });
+            return match || routes[null] && inherit(routes[null], {
+              params: {},
+              pathParams: {}
+            });
+          }
+          function interpolate(string, params) {
+            var result = [];
+            angular.forEach((string || '').split(':'), function(segment, i) {
+              if (i === 0) {
+                result.push(segment);
+              } else {
+                var segmentMatch = segment.match(/(\w+)(?:[?*])?(.*)/);
+                var key = segmentMatch[1];
+                result.push(params[key]);
+                result.push(segmentMatch[2] || '');
+                delete params[key];
+              }
+            });
+            return result.join('');
+          }
+        }];
+      }
+      ngRouteModule.provider('$routeParams', $RouteParamsProvider);
+      function $RouteParamsProvider() {
+        this.$get = function() {
+          return {};
+        };
+      }
+      ngRouteModule.directive('ngView', ngViewFactory);
+      ngRouteModule.directive('ngView', ngViewFillContentFactory);
+      ngViewFactory.$inject = ['$route', '$anchorScroll', '$animate'];
+      function ngViewFactory($route, $anchorScroll, $animate) {
+        return {
+          restrict: 'ECA',
+          terminal: true,
+          priority: 400,
+          transclude: 'element',
+          link: function(scope, $element, attr, ctrl, $transclude) {
+            var currentScope,
+                currentElement,
+                previousLeaveAnimation,
+                autoScrollExp = attr.autoscroll,
+                onloadExp = attr.onload || '';
+            scope.$on('$routeChangeSuccess', update);
+            update();
+            function cleanupLastView() {
+              if (previousLeaveAnimation) {
+                $animate.cancel(previousLeaveAnimation);
+                previousLeaveAnimation = null;
+              }
+              if (currentScope) {
+                currentScope.$destroy();
+                currentScope = null;
+              }
+              if (currentElement) {
+                previousLeaveAnimation = $animate.leave(currentElement);
+                previousLeaveAnimation.then(function() {
+                  previousLeaveAnimation = null;
+                });
+                currentElement = null;
+              }
+            }
+            function update() {
+              var locals = $route.current && $route.current.locals,
+                  template = locals && locals.$template;
+              if (angular.isDefined(template)) {
+                var newScope = scope.$new();
+                var current = $route.current;
+                var clone = $transclude(newScope, function(clone) {
+                  $animate.enter(clone, null, currentElement || $element).then(function onNgViewEnter() {
+                    if (angular.isDefined(autoScrollExp) && (!autoScrollExp || scope.$eval(autoScrollExp))) {
+                      $anchorScroll();
+                    }
+                  });
+                  cleanupLastView();
+                });
+                currentElement = clone;
+                currentScope = current.scope = newScope;
+                currentScope.$emit('$viewContentLoaded');
+                currentScope.$eval(onloadExp);
+              } else {
+                cleanupLastView();
+              }
+            }
+          }
+        };
+      }
+      ngViewFillContentFactory.$inject = ['$compile', '$controller', '$route'];
+      function ngViewFillContentFactory($compile, $controller, $route) {
+        return {
+          restrict: 'ECA',
+          priority: -400,
+          link: function(scope, $element) {
+            var current = $route.current,
+                locals = current.locals;
+            $element.html(locals.$template);
+            var link = $compile($element.contents());
+            if (current.controller) {
+              locals.$scope = scope;
+              var controller = $controller(current.controller, locals);
+              if (current.controllerAs) {
+                scope[current.controllerAs] = controller;
+              }
+              $element.data('$ngControllerController', controller);
+              $element.children().data('$ngControllerController', controller);
+            }
+            link(scope);
+          }
+        };
+      }
+    })(window, window.angular);
+  }).call(System.global);
+  return System.get("@@global-helpers").retrieveGlobal(__module.id, false);
+});
+
 System.register("github:angular/bower-angular@1.3.15", ["github:angular/bower-angular@1.3.15/angular"], true, function(require, exports, module) {
   var global = System.global,
       __define = global.define;
   global.define = undefined;
   module.exports = require("github:angular/bower-angular@1.3.15/angular");
+  global.define = __define;
+  return module.exports;
+});
+
+System.register("github:angular/bower-angular-route@1.3.15", ["github:angular/bower-angular-route@1.3.15/angular-route"], true, function(require, exports, module) {
+  var global = System.global,
+      __define = global.define;
+  global.define = undefined;
+  module.exports = require("github:angular/bower-angular-route@1.3.15/angular-route");
   global.define = __define;
   return module.exports;
 });
@@ -14247,6 +14557,20 @@ System.register("src/routeCtrl", [], function($__export) {
   };
 });
 
+System.register("example/components/home/home", [], function($__export) {
+  "use strict";
+  var __moduleName = "example/components/home/home";
+  function HomeController() {
+    console.log('home controller');
+  }
+  return {
+    setters: [],
+    execute: function() {
+      $__export('default', HomeController);
+    }
+  };
+});
+
 System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", "src/configs", "src/baseCtrl", "src/routeCtrl"], function($__export) {
   "use strict";
   var __moduleName = "src/base";
@@ -14538,6 +14862,44 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
   };
 });
 
+System.register("example/app", ["src/base", "github:angular/bower-angular-route@1.3.15", "example/components/home/home"], function($__export) {
+  "use strict";
+  var __moduleName = "example/app";
+  var basap,
+      uiRouter,
+      home,
+      app,
+      area;
+  function HomeController($location, $anchorScroll) {
+    this.toAnchor = function(id) {
+      $location.hash(id);
+      $anchorScroll();
+    };
+  }
+  function DummyController() {}
+  return {
+    setters: [function($__m) {
+      basap = $__m.default;
+    }, function($__m) {
+      uiRouter = $__m.default;
+    }, function($__m) {
+      home = $__m.default;
+    }],
+    execute: function() {
+      app = basap('basap', ['ngRoute'], {componentBase: '/example/components'});
+      area = app.area('main', []);
+      HomeController.$inject = ['$location', '$anchorScroll'];
+      area.controller('HomeController', HomeController);
+      area.controller('OptionController', DummyController);
+      area.controller('ResourceController', DummyController);
+      area.when('/', {component: 'Home'});
+      area.when('/option', {component: 'Option'});
+      area.when('/resource', {component: 'Resource'});
+      app.bootstrap();
+    }
+  };
+});
+
 (function() {
   var loader = System;
   if (typeof indexOf == 'undefined')
@@ -14643,4 +15005,4 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
   }));
 })();
 });
-//# sourceMappingURL=basap.runtime.js.map
+//# sourceMappingURL=app.sfx.js.map
