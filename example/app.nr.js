@@ -23,7 +23,7 @@ import home from './components/home/home';
 // dependencies and any options
 // see: base.js contructor for options.
 ////////////////////////////////////////
-var app = basap('app',
+var app = basap('basap',
     ['ngNewRouter'], {/* options */});
 
 ///////////////////////////////////////
@@ -34,7 +34,7 @@ var app = basap('app',
 // dependencies and any options
 // see: area.js contructor for options.
 ////////////////////////////////////////
-var area = app.area('public', true);
+var area = app.area('main', true);
 
 ///////////////////////////////////////
 //////// [SET MAPPING] - Optional /////

@@ -23,8 +23,8 @@ import home from './components/home/home';
 // dependencies and any options
 // see: base.js contructor for options.
 ////////////////////////////////////////
-var app = basap('app',
-    ['ui.router'], { componentBase: '/example/components'/* options */});
+var app = basap('basap',
+    ['ui.router'], { componentBase: '/example/components' /* options */});
 
 ///////////////////////////////////////
 ////////// [CREATE AREA] //////////////
@@ -34,7 +34,7 @@ var app = basap('app',
 // dependencies and any options
 // see: area.js contructor for options.
 ////////////////////////////////////////
-var area = app.area('public', true);
+var area = app.area('main', true);
 
 ///////////////////////////////////////
 ///////// [CREATE CONTROLLER] /////////

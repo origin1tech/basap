@@ -233,7 +233,7 @@ class Area {
             let values = Object.keys(map).map((k) => {
                 return map[k];
             });
-            type = this.$basap.contains(values, type, false);
+            type = this.basap.contains(values, type, false);
             if(!type)
                 throw new Error(`Failed to set mapping of type ${type}, the type is invalid.`);
         } else {
@@ -390,7 +390,7 @@ class Area {
             // enabled.
             if(name) {
                 opts.templateUrl = `${name}/${name}.html`;
-                if(self.$basap.lowerPaths !== false)
+                if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
                 opts.controller = `${name}${self.controllerSuffix}`;
                 if(self.controllerAs !== undefined)
@@ -435,7 +435,7 @@ class Area {
                 if(!angular.isString(compBase))
                     throw new Error(`To use components with ${routerName}`+
                         ` componentBase or templateBase must be valid string.`);
-                if(!self.$basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
+                if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
                     opts = self.setBase(self.templateBase, ['templateUrl'], opts);
                 }
                 else {
@@ -468,7 +468,7 @@ class Area {
                 let route = path[r];
                 key = getPath(r, route);
                 route[self.areaKey] = self.name;
-                if(self.$basap.lowerPaths !== false)
+                if(self.basap.lowerPaths !== false)
                     key = key.toLowerCase();
                 self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
             });
@@ -480,7 +480,7 @@ class Area {
                 key = getPath(null, route);
                 if(key){
                     route[self.areaKey] = self.name;
-                    if(self.$basap.lowerPaths !== false)
+                    if(self.basap.lowerPaths !== false)
                         key = key.toLowerCase();
                     self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
                 }
@@ -492,7 +492,7 @@ class Area {
             if(angular.isObject(options)){
                 key = getPath(path, options);
                 options[self.areaKey] = self.name;
-                if(self.$basap.lowerPaths !== false)
+                if(self.basap.lowerPaths !== false)
                     key = key.toLowerCase();
                 self._routes.push(normalizeRouteArray(key, normalizeOptions(options)));
             } else {
@@ -559,7 +559,7 @@ class Area {
         function config($injector) {
 
             // get all providers from app instance.
-            var providers = self.$basap.providers($injector);
+            var providers = self.basap.providers($injector);
 
             // set any mappings that are required.
             if(self.routerName === 'ngNewRouter'){

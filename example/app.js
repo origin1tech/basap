@@ -23,7 +23,7 @@ import home from './components/home/home';
 // dependencies and any options
 // see: base.js contructor for options.
 ////////////////////////////////////////
-var app = basap('app',
+var app = basap('basap',
     ['ngRoute'],
     { componentBase: '/example/components' /* options */}
 );
@@ -35,8 +35,8 @@ var app = basap('app',
 // app pasing in core
 // dependencies and any options
 // see: area.js contructor for options.
-////////////////////////////////////////
-var area = app.area('public', true);
+////////////////////////////////////////d
+var area = app.area('main', true);
 
 ///////////////////////////////////////
 ///////// [CREATE CONTROLLER] /////////

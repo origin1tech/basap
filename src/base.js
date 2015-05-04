@@ -408,7 +408,7 @@ class Base {
         area.module = angular.module(area.ns, area.dependencies);
 
         // expose app instance to area.
-        area.$basap = this;
+        area.basap = this;
 
         // get area routes or all routes.
         area.getRoutes = function getRoutes (all) {
@@ -451,85 +451,6 @@ class Base {
         // inject area into rootScope.
         function run($injector, $rootScope) {
 
-            // angular 2.x router does not
-            // expose start, change, error
-            // broadcast events.
-            if(self.routerName !== 'ngNewRouter'){
-
-                var cur = 2,
-                    next = 1,
-                    areaKey = self.areaKey,
-                    curArea, nextArea,
-                    origAreas;
-
-                // params for current route
-                // in 3 pos withing arguments.
-                if(self.routerName === 'uiRouter')
-                    cur = 3;
-
-                // listen for route start events
-                // add active area to $rootScope.
-                $rootScope.$on(configs[self.routerName].startEvent, function () {
-
-                    // store current $area objects
-                    // in case the route fails.
-                    //origAreas = $rootScope[areaKey];
-
-                    // ensure root scope area object.
-                    //$rootScope[areaKey] = $rootScope[areaKey] || {};
-                    self[areaKey] =  self[areaKey] || {};
-
-                    // get current and next areas.
-                    curArea = arguments[cur] ? arguments[cur] : undefined;
-                    nextArea = arguments[next] ? arguments[next]: undefined;
-
-                    // if no curArea initial
-                    // page load set to home area.
-                    if(!curArea){
-                        curArea = nextArea;
-                    }
-
-                    // lookup the areas.
-                    curArea = self.areas[curArea[areaKey]];
-                    nextArea = self.areas[nextArea[areaKey]];
-
-                    //$rootScope[areaKey].previous = curArea;
-                    //$rootScope[areaKey].current = nextArea;
-                    self[areaKey].previous = curArea;
-                    self[areaKey].current = nextArea;
-
-
-                    // store prev, cur in var
-                    // if route fails reset
-                    // clear on route success.
-                    origAreas = {
-                        previous: curArea,
-                        current: nextArea
-                    };
-
-                });
-
-                // listen for route error events
-                $rootScope.$on(configs[self.routerName].successEvent, function () {
-                    origAreas = undefined;
-                });
-
-                // listen for route error events
-                $rootScope.$on(configs[self.routerName].errorEvent, function () {
-                    // set back to original areas
-                   //$rootScope[areaKey] = origAreas;
-                   self[areaKey] = origAreas;
-                });
-
-            }
-
-            // there are currently no broadcast
-            // events for new 2.x router favor
-            // litening to events within router
-            // controller
-            else {
-                // placeholder.
-            }
         }
         run.$inject = ['$injector', '$rootScope'];
 

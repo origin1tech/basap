@@ -3,7 +3,7 @@
 <head lang="en">
     <base href="/" />
     <meta charset="UTF-8">
-    <title>Basap {{$basap.ns}}</title>
+    <title ng-bind="basap.title()">Basap</title>
     <link rel="icon" type="image/png" href="img/logo.png" />
     <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="example/css/app.css" rel="stylesheet"/>
@@ -48,6 +48,7 @@
     wiring up modules.
 -->
 <script src="./config.js"></script>
+
 <script>
     ////////////////////////////////////
     /////// [UNCOMMENT EXAMPLE] ////////
