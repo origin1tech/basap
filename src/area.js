@@ -245,28 +245,63 @@ class Area {
     }
 
     /**
+     * Normalizes controller names to prevent
+     * casing issues or invalid suffix when
+     * using component feature.
+     * @param name
+     * @returns {string}
+     */
+    normalizeCtrlName(name){
+        if(!this.controllerSuffix)
+            return name;
+        var key = name,
+            suffix = this.controllerSuffix;
+        // make sure suffix is cap.
+        suffix = suffix.charAt(0).toUpperCase() + suffix.slice(1);
+        // attempt to normalize controller
+        // name to prevent mis-namiing &
+        // casing issues. when used with
+        // components.
+        var normExp =
+            new RegExp('(Controller|Ctrl|Con|Ctrls|' + this.controllerSuffix + ')$', 'gi');
+        key = key.replace(normExp, '');
+        // ensure key is is cap.
+        key = key.charAt(0).toUpperCase() + key.slice(1);
+        // check if already componentized.
+        key = `${key}${suffix}`;
+        return key;
+    }
+
+    /**
      * Registers Angular component by type.
-     * Register multiple by passing object of components as second param.
-     * @param type - controller, directive, factory, service, filter, constant, value or decorator.
+     * Register multiple by passing object of
+     * components as second param.
+     * @param type - controller, directive, factory,
+     * service, filter, constant, value or decorator.
      * @param name - the name of the component.
      * @param component - the component itself.
      * @returns {Area}
      */
-    component(type, name, component, componentize){
+    component(type, name, component){
 
         var self = this;
+
+        if(!type) this;
+
         type = type.toLowerCase();
 
         // ensure module is loaded
         if(!this.module && !this.module.config)
             throw new Error(`Failed to register component ${name}, the module is not loaded.`);
 
-        // if is component and of type controller
-        // componentize the controller name.
-        if(type === 'controller' && componentize)
-            name = `${name}${this.controllerSuffix}`;
+        // allow component object as
+        // second argument.
+        if(angular.isObject(name) && !angular.isArray(name)){
+            component = name;
+            name = undefined;
+        }
 
-        // normalize components.
+        // normalize single component to object.
         if(angular.isString(name)){
             var orig = component;
             component = {};
@@ -275,7 +310,11 @@ class Area {
 
         // iterate components add to collection.
         Object.keys(component).forEach((k) => {
-            self._components.push([type, k, component[k]]);
+            let key = k;
+            // componentize key if type controller
+            if(type === 'controller' && self.componentBase)
+                key = self.normalizeCtrlName(key);
+            self._components.push([type, key, component[k]]);
         });
 
     }
@@ -389,10 +428,11 @@ class Area {
             // checking if "controllerAs" is
             // enabled.
             if(name) {
+                let ctrlName = name;
                 opts.templateUrl = `${name}/${name}.html`;
                 if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
-                opts.controller = `${name}${self.controllerSuffix}`;
+                opts.controller = self.normalizeCtrlName(name);
                 if(self.controllerAs !== undefined)
                     opts.controller = `${opts.controller} as ${self.controllerAs}`;
                 opts = self.setBase(base, ['templateUrl'], opts);
@@ -431,7 +471,7 @@ class Area {
             opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
             if(routerName !== 'ngNewRouter'){
                 // componentize uiRouter and ngRoute.
-                let compBase = self.componentBase || self.templateBase;
+                let compBase = self.componentBase;
                 if(!angular.isString(compBase))
                     throw new Error(`To use components with ${routerName}`+
                         ` componentBase or templateBase must be valid string.`);
@@ -513,7 +553,6 @@ class Area {
             path = this.setBase(this.pathBase, path);
         if(angular.isObject(path) && path.redirectTo)
             path.redirectTo = this.setBase(this.pathBase, path.redirectTo);
-
         this._routes.push(['otherwise', path]);
         return this;
     }
@@ -574,7 +613,7 @@ class Area {
                 let type = k[0];
                 if(angular.isString(type) && providers[type]){
                     k.shift();
-                    providers[type].apply(null, k);
+                    providers[type].apply(providers[type], k);
                 } else {
                     throw new Error(`Component type ${type} invalid configuration or not supported.`);
                 }
