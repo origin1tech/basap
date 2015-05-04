@@ -13914,6 +13914,8 @@ System.register("src/area", ["github:angular/bower-angular@1.3.15"], function($_
               type = this.$basap.contains(values, type, false);
               if (!type)
                 throw new Error(("Failed to set mapping of type " + type + ", the type is invalid."));
+            } else {
+              type = map[type];
             }
             this._mappings.push([type, mapping]);
           },
@@ -14141,28 +14143,6 @@ System.register("src/configs", [], function($__export) {
   };
 });
 
-System.register("src/events", ["github:angular/bower-angular@1.3.15"], function($__export) {
-  "use strict";
-  var __moduleName = "src/events";
-  var angular,
-      EventFact;
-  return {
-    setters: [function($__m) {
-      angular = $__m.default;
-    }],
-    execute: function() {
-      EventFact = (function() {
-        var EventFact = function EventFact($rootScope, $basap) {
-          return this;
-        };
-        return ($traceurRuntime.createClass)(EventFact, {}, {});
-      }());
-      EventFact.$inject = ['$rootScope', '$basap'];
-      $__export('default', EventFact);
-    }
-  };
-});
-
 System.register("src/baseCtrl", [], function($__export) {
   "use strict";
   var __moduleName = "src/baseCtrl";
@@ -14200,6 +14180,7 @@ System.register("src/routeCtrl", [], function($__export) {
     execute: function() {
       RouteCtrl = (function() {
         var RouteCtrl = function RouteCtrl($rootScope, $location, $router, $routes) {
+          $router.config.apply($router, $routes.get());
           $rootScope.$watch(function() {
             return $location.path();
           }, function(newVal, oldVal) {
@@ -14214,13 +14195,12 @@ System.register("src/routeCtrl", [], function($__export) {
   };
 });
 
-System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", "src/configs", "src/events", "src/baseCtrl", "src/routeCtrl"], function($__export) {
+System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", "src/configs", "src/baseCtrl", "src/routeCtrl"], function($__export) {
   "use strict";
   var __moduleName = "src/base";
   var angular,
       Area,
       configs,
-      EventFact,
       BaseCtrl,
       RouteCtrl,
       Base;
@@ -14239,8 +14219,6 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
       Area = $__m.default;
     }, function($__m) {
       configs = $__m.default;
-    }, function($__m) {
-      EventFact = $__m.default;
     }, function($__m) {
       BaseCtrl = $__m.default;
     }, function($__m) {
@@ -14268,8 +14246,18 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
               throw new Error('Attempted to initialize using router module of undefined. ' + 'Supported Modules: ngRoute, ngNewRouter, ui.router');
             return normalizeRouter(filtered[0]);
           }
-          if (!ns)
-            throw new Error('Cannot initialize Base using namespace of undefined.');
+          if (!angular.isString(ns)) {
+            if (angular.isObject(ns) && !angular.isArray(ns)) {
+              options = ns;
+              deps = undefined;
+              ns = undefined;
+            }
+            if (angular.isArray(ns)) {
+              options = deps;
+              deps = ns;
+              ns = undefined;
+            }
+          }
           if (!angular.isArray(deps) && angular.isObject(deps)) {
             options = deps;
             deps = undefined;
@@ -14303,7 +14291,7 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
           if (this.BaseCtrl) {
             var elem = this.query(this.baseElement);
             if (elem)
-              elem.setAttribute('ng-controller', ("BaseCtrl as " + this.ns));
+              elem.setAttribute('ng-controller', 'BaseCtrl as ' + this.ns);
           }
           this.routerName = lookupRouter(this.dependencies);
           if (this.routerName === 'ngNewRouter') {
@@ -14312,7 +14300,7 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
             }
           }
           if (this.routerName === 'ngNewRouter' && this.routerElement) {
-            var elem$__1 = this.query(this.baseElement);
+            var elem$__1 = this.query(this.routerElement);
             if (elem$__1)
               elem$__1.setAttribute('ng-controller', 'RouteCtrl as router');
           }
@@ -14381,6 +14369,9 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
               if (!area || a === area)
                 routes = routes.concat(_routes);
             }));
+            if (this.routerName === 'ngNewRouter') {
+              routes = [].concat.apply([], routes);
+            }
             return routes;
           },
           providers: function(injector) {
@@ -14493,12 +14484,9 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
             }
             run.$inject = ['$injector', '$rootScope'];
             function RouteFact() {
-              var factory = {
-                get: function get(area) {
+              var factory = {get: function get(area) {
                   return self.routes(area);
-                },
-                flatten: function flatten() {}
-              };
+                }};
               return factory;
             }
             _module.factory('$routes', RouteFact);
@@ -14509,7 +14497,6 @@ System.register("src/base", ["github:angular/bower-angular@1.3.15", "src/area", 
               return self;
             }
             _module.factory('$basap', BasapFact);
-            _module.factory('EventFact', EventFact);
             if (this.BaseCtrl)
               _module.controller('BaseCtrl', this.BaseCtrl);
             var areaKeys = Object.keys(self.areas);

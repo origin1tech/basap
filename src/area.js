@@ -213,7 +213,8 @@ class Area {
      * name within components.
      * NOTE: valid only for ngNewRouter
      * @see https://angular.github.io/router/$componentLoaderProvider
-     * @param mapping
+     * @param type - the type of component loader to run.
+     * @param mapping - the mapping function to be called.
      */
     setMapping(type, mapping) {
 
@@ -235,6 +236,8 @@ class Area {
             type = this.$basap.contains(values, type, false);
             if(!type)
                 throw new Error(`Failed to set mapping of type ${type}, the type is invalid.`);
+        } else {
+            type = map[type];
         }
 
         this._mappings.push([type, mapping]);

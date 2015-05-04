@@ -23,7 +23,7 @@ import home from './components/home/home';
 // dependencies and any options
 // see: base.js contructor for options.
 ////////////////////////////////////////
-var app = basap('basap',
+var app = basap('app',
     ['ngRoute'],
     { componentBase: '/example/components' /* options */}
 );

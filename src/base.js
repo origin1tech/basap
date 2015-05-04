@@ -1,7 +1,6 @@
 import angular from 'angular';
 import Area from './area';
 import configs from './configs';
-import EventFact from './events';
 import BaseCtrl from './baseCtrl';
 import RouteCtrl from './routeCtrl';
 
@@ -47,8 +46,18 @@ class Base {
             return normalizeRouter(filtered[0]);
         }
 
-        if(!ns)
-            throw new Error('Cannot initialize Base using namespace of undefined.');
+        if(!angular.isString(ns)){
+            if(angular.isObject(ns) && !angular.isArray(ns)){
+                options = ns;
+                deps = undefined;
+                ns = undefined;
+            }
+            if(angular.isArray(ns)){
+                options = deps;
+                deps = ns;
+                ns = undefined;
+            }
+        }
 
         // allow options as second arg.
         if(!angular.isArray(deps) && angular.isObject(deps)){
@@ -148,7 +157,7 @@ class Base {
         if(this.BaseCtrl){
             let elem = this.query(this.baseElement);
             if(elem)
-                elem.setAttribute('ng-controller', `BaseCtrl as ${this.ns}`);
+                elem.setAttribute('ng-controller', 'BaseCtrl as ' + this.ns);
         }
 
         // lookup the router
@@ -165,7 +174,7 @@ class Base {
         // if ngNewRouter add controller
         // expression to routerElement.
         if(this.routerName === 'ngNewRouter' && this.routerElement){
-            let elem = this.query(this.baseElement);
+            let elem = this.query(this.routerElement);
             if(elem)
                 elem.setAttribute('ng-controller', 'RouteCtrl as router');
         }
@@ -285,6 +294,11 @@ class Base {
             if(!area || a === area)
                 routes = routes.concat(_routes);
         });
+
+        // flatten routes.
+        if(this.routerName === 'ngNewRouter'){
+            routes = [].concat.apply([], routes);
+        }
 
         return routes;
 
@@ -484,6 +498,7 @@ class Base {
                     self[areaKey].previous = curArea;
                     self[areaKey].current = nextArea;
 
+
                     // store prev, cur in var
                     // if route fails reset
                     // clear on route success.
@@ -523,9 +538,6 @@ class Base {
             var factory = {
                 get: function get(area) {
                     return self.routes(area);
-                },
-                flatten: function flatten() {
-
                 }
             };
             return factory;
@@ -544,9 +556,6 @@ class Base {
             return self;
         }
         _module.factory('$basap', BasapFact);
-
-        // add events factory to module.
-        _module.factory('EventFact', EventFact);
 
         // expose base controller.
         if(this.BaseCtrl)

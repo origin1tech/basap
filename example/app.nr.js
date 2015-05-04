@@ -23,7 +23,7 @@ import home from './components/home/home';
 // dependencies and any options
 // see: base.js contructor for options.
 ////////////////////////////////////////
-var app = basap('basap',
+var app = basap('app',
     ['ngNewRouter'], {/* options */});
 
 ///////////////////////////////////////
@@ -86,7 +86,9 @@ area.controller('ResourceController', DummyController);
 // see: Area.when method for
 //     options and alternate configs.
 ////////////////////////////////////////
-area.when('/', { templateUrl: 'home' });
+area.when('/', { component: 'Home' });
+area.when('/option', { component: 'Option'});
+area.when('/resource', { component: 'Resource'});
 
 ///////////////////////////////////////
 /////////// [BOOTSTRAP] ///////////////

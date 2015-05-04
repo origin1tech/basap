@@ -17,6 +17,8 @@ if (argv.indexOf('-b') !== -1 || argv.indexOf('--bundle') !== -1 || argv.indexOf
     servDeps.push('build');
 }
 
+var isTest = argv.indexOf('serve-test') !== -1;
+
 // plumber util
 function plumber() {
     return plugins.plumber({errorHandler: plugins.notify.onError()});
@@ -103,6 +105,10 @@ gulp.task('serve', servDeps, function (cb) {
         util.log(util.colors.green('Watched:'), changed);
     });
     return cb();
+});
+
+gulp.task('serve-test', ['serve'], function () {
+    process.exit();
 });
 
 // bump project version
