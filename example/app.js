@@ -36,7 +36,7 @@ var app = basap('basap',
 // dependencies and any options
 // see: area.js contructor for options.
 ////////////////////////////////////////d
-var area = app.area('main', true);
+var area = app.area('main', []);
 
 ///////////////////////////////////////
 ///////// [CREATE CONTROLLER] /////////
