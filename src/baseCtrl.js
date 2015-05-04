@@ -25,7 +25,6 @@ class BaseCtrl {
 
         // initialize the base controller.
         this.init();
-
     }
 
     /**

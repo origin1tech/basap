@@ -606,7 +606,6 @@ class Area {
         // set initialized to true
         // prevent duplicate inits.
         this._initialized = true;
-
         return this;
     }
 

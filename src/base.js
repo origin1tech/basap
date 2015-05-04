@@ -33,13 +33,13 @@ class Base {
 
         // lookup verify supported router.
         function lookupRouter(arr){
+            arr = arr || [];
             let filtered = arr.filter(function (a) {
                 return /^(ngRoute|ngNewRouter|ui\.router)$/.test(a);
             });
             if(filtered.length > 1)
                 throw new Error(`Only one router can be initialized
             attempted to initialize with ${filtered.join(', ')}`);
-
             if(!filtered || !filtered.length)
                 throw new Error('Attempted to initialize using router module of undefined. ' +
                     'Supported Modules: ngRoute, ngNewRouter, ui.router');
@@ -64,6 +64,8 @@ class Base {
             options = deps;
             deps = undefined;
         }
+
+        options = options || {};
 
         // allow dependencies in options
         if(options.dependencies){
@@ -188,8 +190,7 @@ class Base {
         // the key name added to $rootScope.
         this.areaKey = '$area';
 
-        // save the instance.
-        Base.instance = this;
+        return this;
     }
 
     /**
@@ -264,7 +265,7 @@ class Base {
         return setTimeout(function iter(){
             let params;
             if(i===arr.length)
-                return;
+                return done();
             // injects item, index.
             params = [arr[i], i++];
             // if pre call to get params.
@@ -482,22 +483,27 @@ class Base {
         if(this.BaseCtrl)
             _module.controller('BaseCtrl', this.BaseCtrl);
 
-        // asynchronously init areas
-        var areaKeys = Object.keys(self.areas);
-        function fn(item) {
-            var area = self.areas[item];
-            if(area)
-                area.init();
-        }
-        self.async(areaKeys, fn);
-
-        // exec run block.
-        _module.config(config).run(run);
-
-        // bootstrap to element.
-        angular.element(document).ready(function () {
-            angular.bootstrap(element, [self.ns]);
+        var promise = new Promise(function(resolve) {
+            var areaKeys = Object.keys(self.areas);
+            function fn(item) {
+                var area = self.areas[item];
+                if(area)
+                    area.init();
+            }
+            self.async(areaKeys, fn, null, resolve);
         });
+
+        promise.then(function() {
+            // exec run block.
+            _module.config(config).run(run);
+
+            // bootstrap to element.
+            angular.element(document).ready(function () {
+                angular.bootstrap(element, [self.ns]);
+            });
+
+        });
+
 
     }
 
@@ -516,12 +522,11 @@ Base.instance = undefined;
  * @returns {Base}
  */
 function get(ns, deps, options) {
-    var instance = Base.instance;
-    if(!instance){
-        instance = new Base(ns, deps, options);
+    if(!Base.instance){
+        Base.instance = new Base(ns, deps, options);
         Base.constructor = null;
     }
-    return instance;
+    return Base.instance;
 }
 
 

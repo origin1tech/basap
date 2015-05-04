@@ -2,7 +2,10 @@
 
 [![wercker status](https://app.wercker.com/status/4b7cdf23d9e4dd3173b3c5acd563a1cf/m "wercker status")](https://app.wercker.com/project/bykey/4b7cdf23d9e4dd3173b3c5acd563a1cf)
 
-To view documentation please install the application.
+Below is the basic info to get going hower you should install the project so that you 
+can run the server and view the example documentation as well as see a working app.
+
+Often it's easier to follow something already working.
 
 ### Installing
 
