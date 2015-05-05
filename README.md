@@ -1,4 +1,4 @@
-![logo](./img/logo.png) # Basap
+<img src="./img/logo.png width="40" /> # Basap
 
 [![wercker status](https://app.wercker.com/status/4b7cdf23d9e4dd3173b3c5acd563a1cf/m "wercker status")](https://app.wercker.com/project/bykey/4b7cdf23d9e4dd3173b3c5acd563a1cf)
 
