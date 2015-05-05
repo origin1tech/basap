@@ -1,4 +1,4 @@
-![logo](./img/logo.png =40x40) # Basap
+![logo](https://raw.githubusercontent.com/origin1tech/basap/master/img/logo.png =40x40) # Basap
 
 [![wercker status](https://app.wercker.com/status/4b7cdf23d9e4dd3173b3c5acd563a1cf/m "wercker status")](https://app.wercker.com/project/bykey/4b7cdf23d9e4dd3173b3c5acd563a1cf)
 
