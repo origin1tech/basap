@@ -1,6 +1,6 @@
 {
   "name": "basap",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Angular 1.x ES6 base app register module. ",
   "main": "src/base.js",
   "scripts": {

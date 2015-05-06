@@ -128,15 +128,21 @@ class Area {
             // and template mapping for components.
             _mappings: {
                 value: [],
-                writeable: true
+                writable: true
             },
 
             // collection of component configs.
             _components: {
                 value: [],
                 writable: true
-            }
+            },
 
+            // contains list of controllers,
+            // for comparing to required.
+            _controllers: {
+                value: [],
+                writable: true
+            }
         });
 
         return this;
@@ -312,11 +318,21 @@ class Area {
         Object.keys(component).forEach((k) => {
             let key = k;
             // componentize key if type controller
-            if(type === 'controller' && self.componentBase)
+            if(type === 'controller' && self.componentBase){
                 key = self.normalizeCtrlName(key);
+                self._controllers.push(k);
+            }
             self._components.push([type, key, component[k]]);
         });
 
+    }
+
+    /**
+     * Simply calls component.
+     * @returns {Area}
+     */
+    components(){
+        return this.component.apply(this, arguments);
     }
 
     /**
@@ -432,7 +448,7 @@ class Area {
                 opts.templateUrl = `${name}/${name}.html`;
                 if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
-                opts.controller = self.normalizeCtrlName(name);
+                opts.controller = self.normalizeCtrlName(name);//
                 if(self.controllerAs !== undefined)
                     opts.controller = `${opts.controller} as ${self.controllerAs}`;
                 opts = self.setBase(base, ['templateUrl'], opts);
@@ -479,6 +495,9 @@ class Area {
                     opts = self.setBase(self.templateBase, ['templateUrl'], opts);
                 }
                 else {
+                    if(!self.componentBase)
+                        throw new Error('Componetized routes require area.componentBase ' +
+                            'to be set in area options.');
                     if(routerName === 'ngRoute'){
                         opts = generateComponent(compBase, opts);
                     } else {
@@ -594,11 +613,17 @@ class Area {
         var self = this,
             _module = this.module;
 
+        function DummyCtrl() {}
+
+        function lookupController(name) {
+            let ctrls = self._
+        }
+
         // expose provider register methods.
         function config($injector) {
 
             // get all providers from app instance.
-            var providers = self.basap.providers($injector);
+            let providers = self.basap.providers($injector);
 
             // set any mappings that are required.
             if(self.routerName === 'ngNewRouter'){
@@ -613,7 +638,8 @@ class Area {
                 let type = k[0];
                 if(angular.isString(type) && providers[type]){
                     k.shift();
-                    providers[type].apply(providers[type], k);
+
+                    providers[type].apply(null, k);
                 } else {
                     throw new Error(`Component type ${type} invalid configuration or not supported.`);
                 }
@@ -624,12 +650,22 @@ class Area {
             // then inject routes.
             if(self.routerName === 'ngRoute' || self.routerName === 'uiRouter'){
                 self._routes.forEach((r) => {
-                    let key = r[0];
+                    let key = r[0],
+                        opts = r[1],
+                        reqCtrl;
                     if(key === 'otherwise'){
                         // strip first element.
                         r.shift();
                         providers.otherwise[self.routerConfig.otherwiseMethod].apply(providers.otherwise, r);
                     } else {
+                        // if component, check for
+                        // valid controller if not exists
+                        // inject noop dummy controller.
+                        if(opts.component){
+                            reqCtrl = self.normalizeCtrlName(opts.component);
+                            if(!self.basap.contains(self._controllers, reqCtrl))
+                                providers.controller(reqCtrl, DummyCtrl);
+                        }
                         providers.route[self.routerConfig.whenMethod].apply(providers.route, r);
                     }
                 });

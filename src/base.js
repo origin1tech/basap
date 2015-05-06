@@ -103,6 +103,13 @@ class Base {
         // global path for components.
         this.componentBase = '/components';
 
+        // when true root base paths are
+        // prepended to area paths.
+        // if you wish to use root paths
+        // only if not defined in area set
+        // this to false.
+        this.prependPaths = undefined;
+
         // lower route paths.
         // undefined or true paths
         // are lowered.
@@ -382,8 +389,20 @@ class Base {
         // set default area options
         // if not defined.
         globalAreaOptsKeys.forEach((k) => {
-            if(area[k] === undefined )
-                area[k] = self[k];
+            if(!self.contains(['routeBase', 'templateBase', 'componentBase'], k)){
+                if(area[k] === undefined)
+                    area[k] = self[k];
+            } else {
+                // prepend base paths to area paths.
+                if(area[k] !== undefined && self.prependPaths !== false) {
+                    if(area[k].charAt(0) !== '/')
+                        area[k] = '/' + area[k];
+                    area[k] = self[k] + area[k];
+                    area[k] = area[k].replace(/\/\//g, '/');
+                } else {
+                    area[k] = self[k];
+                }
+            }
         });
 
         // ensure access is an array.
