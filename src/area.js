@@ -292,9 +292,11 @@ class Area {
 
         var self = this;
 
-        if(!type) this;
+        if(!type) return this;
 
+        // lower and strip plural.
         type = type.toLowerCase();
+        type = type.replace(/s$/, '');
 
         // ensure module is loaded
         if(!this.module && !this.module.config)
