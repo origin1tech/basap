@@ -6,7 +6,8 @@ class BaseCtrl {
 
     constructor($rootScope, $basap) {
 
-        let extend = {};
+        var extend = {},
+            routes;
 
         /* Extend Controller
         ************************************************/
@@ -14,6 +15,17 @@ class BaseCtrl {
             extend = $basap.baseExtend;
         delete $basap.baseExtend;
         angular.extend(this, $basap, extend);
+
+        /* Get Menu Items.
+        ************************************************/
+        routes = this.routes();
+
+        // iterate the routes stripping
+        // out those specified as menu enabled.
+        angular.forEach(routes, function (r) {
+            let route = r[1];
+
+        });
 
         /* Methods & Properties
         ************************************************/

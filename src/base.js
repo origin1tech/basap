@@ -303,18 +303,12 @@ class Base {
      * if mapped returns url/path
      * with configuration object.
      * @param [area] - the area you wish to retrieve routes for.
-     * @param [mapped] - return routes as map object instead of array.
-     * @returns {Array|Object}
+     * @returns {Array}
      */
-    routes(area, mapped) {
+    routes(area) {
 
         var self = this,
             routes = [];
-
-        if(self.isBoolean(area)){
-            mapped = area;
-            area = undefined;
-        }
 
         Object.keys(this.areas).forEach((a) => {
             let _routes = self.areas[a]._routes;
@@ -325,15 +319,11 @@ class Base {
         // flatten routes.
         if(this.routerName === 'ngNewRouter'){
             routes = [].concat.apply([], routes);
-        }
-
-        if(mapped){
-            let map = {};
-            angular.forEach(routes, function (r) {
-                let obj = r[1];
-                map[obj.url || obj.path || r[0]] = obj;
+        } else {
+            // convert to array of objects.
+            angular.forEach(routes, function (r,i) {
+                routes[i] = r[1];
             });
-            return map;
         }
 
         return routes;

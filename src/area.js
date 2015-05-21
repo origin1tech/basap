@@ -184,7 +184,7 @@ class Area {
             // ensure no double backslashes
             result = b + p;
             result = result.replace(/\\/g, '/');
-            return b + p;
+            return result;
         }
 
         // iterate object's properties and
@@ -441,12 +441,13 @@ class Area {
         // get the path or overridden path.
         function getPath(key, route) {
             if(routerName === 'ngRoute' || routerName === 'ngNewRouter'){
+                route.path = route.path || key;
                 key = route.path || key;
                 key = self.setBase(self.pathBase, key);
-                if(routerName !== 'ngNewRouter')
-                    delete route.path;
             }
             if(routerName === 'uiRouter' && route.state !== undefined){
+                route.url = route.url || route.path;
+                route.path = route.url;
                 key = route.state || key;
                 delete route.state;
             }
