@@ -6,8 +6,6 @@ class BaseCtrl {
 
     constructor($rootScope, $basap) {
 
-        // TODO: add lifecycle events for ngNewRouter.
-
         let extend = {};
 
         /* Extend Controller
@@ -25,6 +23,7 @@ class BaseCtrl {
 
         // initialize the base controller.
         this.init();
+
     }
 
     /**
@@ -33,7 +32,7 @@ class BaseCtrl {
     */
     title(){
         var self = this,
-            str = this.ns,
+            title = this.ns,
             curArea;
         function getArea() {
             try{
@@ -43,11 +42,11 @@ class BaseCtrl {
             }
         }
         curArea = getArea();
-        str = curArea && curArea.name ? `${str} - ${curArea.name}` : str;
-        str = str.replace(/\w\S*/g, function(txt){
+        title = curArea && curArea.name ? `${title} - ${curArea.name}` : title;
+        title = title.replace(/\w\S*/g, function(txt){
             return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
         });
-        return str;
+        return title;
     }
 
     /**

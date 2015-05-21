@@ -91,8 +91,17 @@ class Base {
         // enable/disable html5 mode.
         this.html5Mode = undefined;
 
-        // NOTE: routeBase, templateBase & componentBase
-        // can be overriden at the area level.
+        // when not falls base paths are
+        // prepended to area paths.
+        // set to false to to use area
+        // paths only.
+        this.basePrepend = undefined;
+
+        // globally prefixes all base
+        // paths. used when entire directory
+        // is within a sub dir from the
+        // web servers's root path.
+        this.mount = '';
 
         // globally prepends route paths.
         this.routeBase = '';
@@ -102,12 +111,6 @@ class Base {
 
         // global path for components.
         this.componentBase = '';
-
-        // when true root base paths are
-        // prepended to area paths.
-        // set to false to to use area
-        // paths only.
-        this.basePrepend = false;
 
         // lower route paths.
         // undefined or true paths
@@ -409,14 +412,15 @@ class Base {
                 // if basePrepend prefix tmpBase
                 // with the base type path
                 // from app's options.
-                if(self.basePrepend === true)
+                if(self.basePrepend !== false)
                     tmpBase = self[k] + tmpBase;
                 // if no tmpBase but app options
                 // contains value of same base
                 // type set it as the path.
                 if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
                     tmpBase = self[k];
-
+                // check for mount point.
+                tmpBase = `${self.mount || ''}/${tmpBase}`;
                 // ensure no double backslashes.
                 tmpBase = tmpBase.replace(/\/\//g, '/');
                 // remove trailing slash.

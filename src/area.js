@@ -524,9 +524,9 @@ class Area {
                         throw new Error(`To use components with ${routerName}`+
                             ` componentBase must be string || empty string.`);
                     if(routerName === 'ngRoute'){
-                        opts = generateComponent(compBase, opts);
+                        opts = generateComponent(self.componentBase, opts);
                     } else {                    
-                        opts = iterateUiComponents(compBase, opts);
+                        opts = iterateUiComponents(self.componentBase, opts);
                     }
                 }
             }
