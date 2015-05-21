@@ -202,6 +202,16 @@ class Base {
     }
 
     /**
+     * Simple check if value is
+     * a boolean object.
+     * @param val
+     * @returns {boolean}
+     */
+    isBoolean(val) {
+        return val === true || val === false;
+    }
+
+    /**
      * Try catch get provider.
      * make errors clear.
      * @param injector - instance of $injector.
@@ -290,13 +300,21 @@ class Base {
     /**
      * Returns collection of routes
      * by area name or all.
-     * @param [area]
-     * @returns {Array}
+     * if mapped returns url/path
+     * with configuration object.
+     * @param [area] - the area you wish to retrieve routes for.
+     * @param [mapped] - return routes as map object instead of array.
+     * @returns {Array|Object}
      */
-    routes(area) {
+    routes(area, mapped) {
 
         var self = this,
             routes = [];
+
+        if(self.isBoolean(area)){
+            mapped = area;
+            area = undefined;
+        }
 
         Object.keys(this.areas).forEach((a) => {
             let _routes = self.areas[a]._routes;
@@ -307,6 +325,15 @@ class Base {
         // flatten routes.
         if(this.routerName === 'ngNewRouter'){
             routes = [].concat.apply([], routes);
+        }
+
+        if(mapped){
+            let map = {};
+            angular.forEach(routes, function (r) {
+                let obj = r[1];
+                map[obj.url || obj.path || r[0]] = obj;
+            });
+            return map;
         }
 
         return routes;
@@ -511,7 +538,15 @@ class Base {
 
         // expose basap as factory
         function BasapFact () {
-            return self;
+            var _instance = self;
+            // need to extend w/methods.
+            _instance.routes = self.routes.bind(self);
+            _instance.tryInject = self.tryInject.bind(self);
+            _instance.contains = self.contains.bind(self);
+            _instance.query = self.query.bind(self);
+            _instance.providers = self.providers.bind(self);
+            _instance.async = self.async.bind(self);
+            return _instance;
         }
         _module.factory('$basap', BasapFact);
 
