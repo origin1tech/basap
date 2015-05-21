@@ -101,25 +101,18 @@ class Base {
         this.templateBase = '';
 
         // global path for components.
-        this.componentBase = '/components';
+        this.componentBase = '';
 
         // when true root base paths are
         // prepended to area paths.
-        // if you wish to use root paths
-        // only if not defined in area set
-        // this to false.
-        this.prependPaths = undefined;
+        // set to false to to use area
+        // paths only.
+        this.basePrepend = false;
 
         // lower route paths.
         // undefined or true paths
         // are lowered.
         this.lowerPaths = undefined;
-
-        // required when ngRoute or uiRouter if
-        // route defined as component. set
-        // to false to ignore typically
-        // either Controller or Ctrl.
-        this.controllerSuffix = 'Controller';
 
         // the expression name used for
         // "controller" property in routes.
@@ -129,7 +122,12 @@ class Base {
         // follows: SomeController as ctrl.
         // where ctrl is the property defined
         // below.
-        this.controllerAs = 'ctrl';
+        this.controllerAs = 'ctrl';   
+    
+        // Basap needs to know what controller
+        // suffix to use when wiring up
+        // component controllers.
+        this.controllerSuffix = undefined;
 
         // when not false instance
         // add $app to window.
@@ -192,7 +190,7 @@ class Base {
         this.routerConfig = angular.extend(configs[this.routerName], this.routerConfig);
 
         // ensure controllerSuffix
-        this.controllerSuffix = this.controllerSuffix || 'Controller';
+        this.controllerSuffix = this.controllerSuffix || 'Ctrl';
 
         // the key name added to $rootScope.
         this.areaKey = '$area';
@@ -389,30 +387,45 @@ class Base {
         // set default area options
         // if not defined.
         globalAreaOptsKeys.forEach((k) => {
+            // if not a base type
+            // and area's key has no
+            // value, simply update
+            // from app options property.
             if(!self.contains(['routeBase', 'templateBase', 'componentBase'], k)){
                 if(area[k] === undefined)
                     area[k] = self[k];
-            } else {
+            }
+            // if key is a base type
+            // check for prepends and
+            // overrides.
+            else {
                 // prepend base paths to area paths.
-                if(area[k] !== undefined && self.prependPaths !== false) {
-                    if(area[k].charAt(0) !== '/')
-                        area[k] = '/' + area[k];
-                    area[k] = self[k] + area[k];
-                    area[k] = area[k].replace(/\/\//g, '/');
-                } else {
-                    area[k] = self[k];
-                }
+                let tmpBase = area[k] || '';
+                if(area.areaBase)
+                    tmpBase = `${area.areaBase}/${tmpBase}`;
+                // ensure first char is backslash.
+                if(tmpBase.charAt(0) !== '/')
+                    tmpBase = `/${tmpBase}`;
+                // if basePrepend prefix tmpBase
+                // with the base type path
+                // from app's options.
+                if(self.basePrepend === true)
+                    tmpBase = self[k] + tmpBase;
+                // if no tmpBase but app options
+                // contains value of same base
+                // type set it as the path.
+                if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
+                    tmpBase = self[k];
+
+                // ensure no double backslashes.
+                tmpBase = tmpBase.replace(/\/\//g, '/');
+                // remove trailing slash.
+                tmpBase = tmpBase.replace(/\/$/, '');
+                // finally update the base type
+                // with the tmpBase value.
+                area[k] = tmpBase || '';
             }
         });
-
-        // ensure access is an array.
-        if(!angular.isArray(area.access)){
-            if(angular.isNumber(area.access) || angular.isString(area.access))
-                area.access = [area.access];
-            else
-                throw new Error(`Failed to register area ${area.name}
-            area.access must be of type array but got ${typeof area.access}`);
-        }
 
         // get area namespace.
         area.ns = area.ns || (`${this.ns}.${name}`);

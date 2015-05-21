@@ -38,16 +38,12 @@ class Area {
         // area module dependencies.
         this.dependencies = deps || [];
 
-        // area global access roles/levels.
-        this.access = [0];
-
-        // when true base paths (template, path, component)
-        // defined in basap (the base.js file)
-        // are ignored. Otherwise the paths
-        // specified in basap are prepended to the
-        // below base paths.
-        // TODO: Not Implemented yet.
-        this.baseOverride = false;
+        // area base by default is set to
+        // the area name. areaBase
+        // prefixes pathBase, templateBase
+        // and componentBase if defined
+        // set to false to ignore.
+        this.areaBase = undefined;
 
         // prefix routes with this string.
         this.pathBase = undefined;
@@ -58,15 +54,7 @@ class Area {
         // base path for components.
         this.componentBase = undefined;
 
-        // the suffix you use to define
-        // your controllers usually
-        // Controller or ctrl. This property
-        // is used to append this string
-        // to compoentized routes for ngRoute
-        // and uiRouter.
-        this.controllerSuffix = undefined;
-
-        // expression name used when
+                // expression name used when
         // defining route controllers with
         // controller as syntax.
         // this is only used for ngRoute
@@ -78,12 +66,25 @@ class Area {
         // 'SomeController as ctrl' }
         this.controllerAs = undefined;
 
+        // Basap needs to know what controller
+        // suffix to use when wiring up
+        // component controllers.
+        this.controllerSuffix = undefined;
+
         // disable the area.
         this.inactive = false;
 
         // extend w/ options.
         if(options)
             angular.extend(this, options);
+
+        // check if areaBase is enabled.
+        if(this.areaBase !== false){
+            // if areaBase is string use
+            // it otherwise set to area name.
+            if(!angular.isString(this.areaBase))
+                this.areaBase = `/${this.name}`;
+        }
 
         /* Components
         ***********************************/
@@ -172,12 +173,17 @@ class Area {
         // joins two strings.
         // Todo: test make sure works in all scenarios.
         function join(b,p) {
+            let result;
             b = b || '';
             // ensure . or / as first char.
             if(b && !/^(\.|\/)/.test(p))
                 p = '/' + p;
+            // remove last char if backslash.
             if(/\/$/.test(p) && p.length > 1)
                 p = p.slice(0, -1);
+            // ensure no double backslashes
+            result = b + p;
+            result = result.replace(/\\/g, '/');
             return b + p;
         }
 
@@ -294,38 +300,55 @@ class Area {
 
         if(!type) return this;
 
-        // lower and strip plural.
-        type = type.toLowerCase();
-        type = type.replace(/s$/, '');
+        function addComponent(t, c) {
+             // iterate components add to collection.
+            Object.keys(c).forEach((k) => {
+                let key = k;
+                // componentize key if type controller
+                if(t === 'controller' && self.componentBase){
+                    key = self.normalizeCtrlName(key);
+                    self._controllers.push(k);
+                }
+                self._components.push([t, key, c[k]]);
+            });
+        }
 
-        // ensure module is loaded
+         // ensure module is loaded
         if(!this.module && !this.module.config)
             throw new Error(`Failed to register component ${name}, the module is not loaded.`);
 
-        // allow component object as
-        // second argument.
-        if(angular.isObject(name) && !angular.isArray(name)){
-            component = name;
-            name = undefined;
-        }
+        // if only one argument assume
+        // object containing collection
+        // of component types.
+        if(arguments.length === 1) {
+            if(!angular.isObject(type) && !angular.isArray(type))
+                throw new Error(`Failed to load component collection of type ${typeof type}.`);
+            Object.keys(type).forEach(function (k){
+                addComponent(k, type[k]);
+            });
+        } else {
 
-        // normalize single component to object.
-        if(angular.isString(name)){
-            var orig = component;
-            component = {};
-            component[name] = orig;
-        }
+             // lower and strip plural.
+            type = type.toLowerCase();
+            if(type === 'factories')
+                type = 'factory';
+            type = type.replace(/s$/, '');       
 
-        // iterate components add to collection.
-        Object.keys(component).forEach((k) => {
-            let key = k;
-            // componentize key if type controller
-            if(type === 'controller' && self.componentBase){
-                key = self.normalizeCtrlName(key);
-                self._controllers.push(k);
+            // allow component object as
+            // second argument.
+            if(angular.isObject(name) && !angular.isArray(name)){
+                component = name;
+                name = undefined;
             }
-            self._components.push([type, key, component[k]]);
-        });
+
+            // normalize single component to object.
+            if(angular.isString(name)){
+                var orig = component;
+                component = {};
+                component[name] = orig;
+            }
+            addComponent(type, component);
+        }   
 
     }
 
@@ -434,34 +457,40 @@ class Area {
         // if options contains "component"
         // componentize the configuration
         // options for the route.
-        function generateComponent(name, base, opts) {
-            if(arguments.length === 2){
-                opts = base;
-                base = name;
-                name = undefined;
-            }
-            name = opts.component;
+        function generateComponent(base, opts) {
+            // if(arguments.length === 2){
+            //     opts = base;
+            //     base = name;
+            //     name = undefined;
+            // }
+            let templateUrl = opts.component,
+                name = templateUrl,
+                parts;
+
+            // check template parts, pop name.
+            if(/\//g.test(templateUrl))
+                name = templateUrl.split('/').pop();
+            
             // set the genrated templateUrl
             // and the generated controller
             // checking if "controllerAs" is
             // enabled.
             if(name) {
                 let ctrlName = name;
-                opts.templateUrl = `${name}/${name}.html`;
+                opts.templateUrl = `${templateUrl}/${name}.html`;
                 if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
                 opts.controller = self.normalizeCtrlName(name);//
-                if(self.controllerAs !== undefined)
+                if(self.controllerAs !== false)
                     opts.controller = `${opts.controller} as ${self.controllerAs}`;
                 opts = self.setBase(base, ['templateUrl'], opts);
             }
-            return opts
+            return opts;
         }
 
         // iterate the views or children object
         // generating the templateUrls and controllers
         function iterateUiComponents(base, obj) {
-
             for (var prop in obj) {
                 if (obj.hasOwnProperty(prop)) {
                     if(prop === 'children'){
@@ -474,11 +503,9 @@ class Area {
                     }
                 }
             }
-
             if(obj.component) {
                 obj = generateComponent(base, obj);
             }
-
             return obj;
         }
 
@@ -488,22 +515,17 @@ class Area {
         function normalizeOptions(opts){
             opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
             if(routerName !== 'ngNewRouter'){
-                // componentize uiRouter and ngRoute.
-                let compBase = self.componentBase;
-                if(!angular.isString(compBase))
-                    throw new Error(`To use components with ${routerName}`+
-                        ` componentBase or templateBase must be valid string.`);
+                // componentize uiRouter and ngRoute.    
                 if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
                     opts = self.setBase(self.templateBase, ['templateUrl'], opts);
                 }
                 else {
-                    if(!self.componentBase)
-                        throw new Error('Componetized routes require area.componentBase ' +
-                            'to be set in area options.');
+                     if(!angular.isString(self.componentBase))
+                        throw new Error(`To use components with ${routerName}`+
+                            ` componentBase must be string || empty string.`);
                     if(routerName === 'ngRoute'){
                         opts = generateComponent(compBase, opts);
-                    } else {
-                        //opts = generateComponent(compBase, opts);
+                    } else {                    
                         opts = iterateUiComponents(compBase, opts);
                     }
                 }
@@ -581,24 +603,24 @@ class Area {
     /**
      * Adds custom configure function to module.
      * this is merely a convenience wrapper
-     * @param [fn] - the function to exec.
+     * @param [fn] - the function to exec or array containing dependencies.
      * @returns {Area}
      */
     config(fn) {
-        if(angular.isFunction (fn))
-            this.module.config(fn);
+        if(fn)
+            this.module.config.apply(this, arguments);
         return this;
     }
 
     /**
      * Adds custom run function to module.
      * this is merely a convenience wrapper.
-     * @param [fn] - the function to exec.
+     * @param [fn] - the function to exec or array including dependencies.
      * @returns {Area}
      */
     run(fn) {
-        if(angular.isFunction (fn))
-            this.module.run(fn);
+        if(fn)
+            this.module.config.apply(this, arguments);
         return this;
     }
 
@@ -616,10 +638,6 @@ class Area {
             _module = this.module;
 
         function DummyCtrl() {}
-
-        function lookupController(name) {
-            let ctrls = self._
-        }
 
         // expose provider register methods.
         function config($injector) {
