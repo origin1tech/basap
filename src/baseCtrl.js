@@ -18,13 +18,9 @@ class BaseCtrl {
 
         /* Get Menu Items.
         ************************************************/
-        routes = this.routes();
 
-        // iterate the routes stripping
-        // out those specified as menu enabled.
-        angular.forEach(routes, function (r) {
-            let route = r[1];
-
+        this.menu = this.routes().filter(function(r) {
+            return r.menu;
         });
 
         /* Methods & Properties
