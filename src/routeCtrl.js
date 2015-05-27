@@ -6,10 +6,10 @@
  */
 class RouteCtrl {
 
-    constructor($rootScope, $location, $router, $routes) {
+    constructor($rootScope, $location, $basap, $router) {
 
         // add routes.
-        $router.config.apply($router, $routes.get());
+        $router.config.apply($router, $basap.routes());
 
         $rootScope.$watch(function () {
             return $location.path();
@@ -20,6 +20,6 @@ class RouteCtrl {
 
     }
 }
-RouteCtrl.$inject = ['$rootScope', '$location', '$router', '$routes'];
+RouteCtrl.$inject = ['$rootScope', '$location', '$basap', '$router'];
 
 export default RouteCtrl;

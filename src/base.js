@@ -198,6 +198,16 @@ class Base {
         // the key name added to $rootScope.
         this.areaKey = '$area';
 
+        // private properties.
+        Object.defineProperties(this, {
+
+            _menu: {
+                value: undefined,
+                writable: true
+            }
+
+        });
+
         return this;
     }
 
@@ -479,6 +489,30 @@ class Base {
     }
 
     /**
+     * Gets menu items from routes when
+     * route options contains property "menu"
+     * @param [sort] - comparer to sort routes checks property "sort".
+     * @returns {array}
+     */
+    menu(sort) {
+        var _sort = sort || function sort(a,b) {
+                if(a.sort < b.sort)
+                    return 1;
+                if(a.sort > b.sort)
+                    return 1;
+                return 0;
+            };
+        if(this._menu)
+            return this._menu;
+        // filter routes where "menu" property is present.
+        this._menu = this.routes().filter(function(r) {
+            return r.menu;
+        });
+
+        return this._menu;
+    }
+
+    /**
      * Boostraps Angular app.
      * @param element - the element to bootstrap app.
      */
@@ -508,16 +542,17 @@ class Base {
         }
         run.$inject = ['$injector', '$rootScope'];
 
+        // DEPRECATED: get routes from $basap factory.
         // add factory for getting routes.
-        function RouteFact() {
-            var factory = {
-                get: function get(area) {
-                    return self.routes(area);
-                }
-            };
-            return factory;
-        }
-        _module.factory('$routes', RouteFact);
+        //function RouteFact() {
+        //    var factory = {
+        //        get: function get(area) {
+        //            return self.routes(area);
+        //        }
+        //    };
+        //    return factory;
+        //}
+        //_module.factory('$routes', RouteFact);
 
         // add main router controller.
         // you can add nested routers
@@ -536,6 +571,7 @@ class Base {
             _instance.query = self.query.bind(self);
             _instance.providers = self.providers.bind(self);
             _instance.async = self.async.bind(self);
+            _instance.menu = self.menu.bind(self);
             return _instance;
         }
         _module.factory('$basap', BasapFact);
@@ -565,14 +601,12 @@ class Base {
 
         });
 
-
     }
 
 }
 
 // Singleton instance of Base.
 Base.instance = undefined;
-
 
 /**
  * Gets singleton instance of Base.

@@ -1,3 +1,5 @@
+var _routes, _menu, _breadcrumb;
+
 /**
  * Base controller class.
  * @class
@@ -16,18 +18,28 @@ class BaseCtrl {
         delete $basap.baseExtend;
         angular.extend(this, $basap, extend);
 
-        /* Get Menu Items.
-        ************************************************/
-
-        this.menu = this.routes().filter(function(r) {
-            return r.menu;
-        });
-
-        /* Methods & Properties
+        /* Properties
         ************************************************/
 
         // expose rootScope
         this.$rootScope = $rootScope;
+
+        // set private variable to loaded routes.
+        if(!_routes)
+            _routes = this.routes();
+
+        // private properties.
+        Object.defineProperties(this, {
+
+            // set routes as they are
+            // loaded prior to bootstrapping
+            // i.e. they don't change.
+            _routes: {
+                value: this.routes(),
+                writable: true
+            }
+
+        });
 
         // initialize the base controller.
         this.init();
