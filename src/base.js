@@ -513,6 +513,30 @@ class Base {
     }
 
     /**
+     * Adds custom configure function to module.
+     * this is merely a convenience wrapper
+     * @param [fn] - the function to exec or array containing dependencies.
+     * @returns {Area}
+     */
+    config(fn) {
+        if(fn)
+            this.module.config.apply(this, arguments);
+        return this;
+    }
+
+    /**
+     * Adds custom run function to module.
+     * this is merely a convenience wrapper.
+     * @param [fn] - the function to exec or array including dependencies.
+     * @returns {Base}
+     */
+    run(fn) {
+        if(fn)
+            this.module.run.apply(this, arguments);
+        return this;
+    }
+
+    /**
      * Boostraps Angular app.
      * @param element - the element to bootstrap app.
      */

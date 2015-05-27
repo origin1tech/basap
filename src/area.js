@@ -514,7 +514,10 @@ class Area {
         // path or template has been
         // provided as prefix.
         function normalizeOptions(opts){
-            opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
+            //opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
+            // redirect should not be set to base
+            // should supply full static path.
+            opts = self.setBase(self.pathBase, ['url'], opts);
             if(routerName !== 'ngNewRouter'){
                 // componentize uiRouter and ngRoute.    
                 if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
@@ -573,15 +576,29 @@ class Area {
 
         // process single route w/ options.
         else {
-            if(angular.isObject(options)){
-                key = getPath(path, options);
-                options[self.areaKey] = self.name;
-                if(self.basap.lowerPaths !== false)
-                    key = key.toLowerCase();
-                self._routes.push(normalizeRouteArray(key, normalizeOptions(options)));
-            } else {
-                throw new Error(`Route ${path} could not be registered, the configuration is missing or invalid.`);
+
+            if(arguments.length !== 2 || (!angular.isString(options) || !angular.isObject(options))){
+                throw new Error(`Route ${path} could not be registered, the configuration invalid.`);
             }
+
+            else {
+
+                // if options is string
+                // assume redirect.
+                if(angular.isString(options)){
+                    options = { redirectTo: options }
+                }
+
+                if(angular.isObject(options)){
+                    key = getPath(path, options);
+                    options[self.areaKey] = self.name;
+                    if(self.basap.lowerPaths !== false)
+                        key = key.toLowerCase();
+                    self._routes.push(normalizeRouteArray(key, normalizeOptions(options)));
+                }
+
+            }
+
         }
 
         return this;
@@ -621,7 +638,7 @@ class Area {
      */
     run(fn) {
         if(fn)
-            this.module.config.apply(this, arguments);
+            this.module.run.apply(this, arguments);
         return this;
     }
 
@@ -687,7 +704,11 @@ class Area {
                             if(!self.basap.contains(self._controllers, reqCtrl))
                                 providers.controller(reqCtrl, DummyCtrl);
                         }
-                        providers.route[self.routerConfig.whenMethod].apply(providers.route, r);
+
+                        if(self.routerName === 'uiRouter' && opts.redirectTo)
+                            providers.otherwise.when.call(providers.otherwise, opts.url, opts.redirectTo);
+                        else
+                            providers.route[self.routerConfig.whenMethod].apply(providers.route, r);
                     }
                 });
             }
