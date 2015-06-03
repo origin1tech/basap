@@ -636,7 +636,7 @@ Base.instance = undefined;
  * Gets singleton instance of Base.
  * @param [ns] - the app namespace
  * @param [deps] - the main module dependencies.
- * @param [options] - area default options.
+ * @param [options] - base default options.
  * @private
  * @returns {Base}
  */
