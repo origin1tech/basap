@@ -447,7 +447,10 @@ class Base {
                 if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
                     tmpBase = self[k];
                 // check for mount point.
-                tmpBase = `${self.mount || ''}/${tmpBase}`;
+                // routeBase should NOT be
+                // prepended with mount point.
+                if(k !== 'routeBase')
+                    tmpBase = `${self.mount || ''}/${tmpBase}`;
                 // ensure no double backslashes.
                 tmpBase = tmpBase.replace(/\/\//g, '/');
                 // remove trailing slash.
@@ -456,6 +459,7 @@ class Base {
                 // with the tmpBase value.
                 area[k] = tmpBase || '';
             }
+
         });
 
         // get area namespace.

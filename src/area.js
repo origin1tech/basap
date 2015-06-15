@@ -38,6 +38,12 @@ class Area {
         // area module dependencies.
         this.dependencies = deps || [];
 
+        // when true this tells Basap that
+        // this is the main area and as such
+        // routeBase should not be prepended
+        // to routes.
+        this.root = undefined;
+
         // area base by default is set to
         // the area name. areaBase
         // prefixes pathBase, templateBase
@@ -46,7 +52,8 @@ class Area {
         this.areaBase = undefined;
 
         // prefix routes with this string.
-        this.pathBase = undefined;
+        // TODO: convert to routeBase currently a minor bug.
+        this.routeBase = undefined;
 
         // prefix template url with this string.
         this.templateBase = undefined;
@@ -54,7 +61,7 @@ class Area {
         // base path for components.
         this.componentBase = undefined;
 
-                // expression name used when
+        // expression name used when
         // defining route controllers with
         // controller as syntax.
         // this is only used for ngRoute
@@ -157,6 +164,8 @@ class Area {
      */
     setBase(base, key, obj){
 
+        var self = this;
+
         // allows passing two strs
         // the base path and the route path.
         if(arguments.length === 2){
@@ -196,8 +205,16 @@ class Area {
                         iterateConfig(o[prop]);
                     }
                     else {
-                        if(contains(key, prop))
-                            o[prop] = join(base, o[prop]);
+                        if(contains(key, prop)){
+                            if(prop === 'url' || prop === 'path'){
+                                if(!o.root && !self.root)
+                                    o[prop] = join(base, o[prop]);
+                            } else {
+                                o[prop] = join(base, o[prop]);
+                            }
+                            if(o[prop] !== '/')
+                                o[prop] = o[prop].replace(/\/$/, '');
+                        }
                     }
                 }
             }
@@ -332,7 +349,7 @@ class Area {
             type = type.toLowerCase();
             if(type === 'factories')
                 type = 'factory';
-            type = type.replace(/s$/, '');       
+            type = type.replace(/s$/, '');
 
             // allow component object as
             // second argument.
@@ -348,7 +365,7 @@ class Area {
                 component[name] = orig;
             }
             addComponent(type, component);
-        }   
+        }
 
     }
 
@@ -368,6 +385,13 @@ class Area {
      * case the Array containing configuration objects must
      * have a property named "path" for ngRoute/ngRouterNew and a
      * property named "state" for ui.router.
+     *
+     * NOTE: when using routeBase which is set to true by
+     * default you should set your main or root route
+     * to "root:true" in the route config. This tells Basap
+     * NOT to prefix this route with a base. To disable
+     * set routeBase to false. You may also set root:true
+     * on the area config to apply to all routes in the area.
      *
      * [ngRoute]
      * ex: Single Route
@@ -443,7 +467,7 @@ class Area {
             if(routerName === 'ngRoute' || routerName === 'ngNewRouter'){
                 route.path = route.path || key;
                 key = route.path || key;
-                key = self.setBase(self.pathBase, key);
+                key = self.setBase(self.routeBase, key);
             }
             if(routerName === 'uiRouter' && route.state !== undefined){
                 route.url = route.url || route.path;
@@ -465,19 +489,17 @@ class Area {
             //     name = undefined;
             // }
             let templateUrl = opts.component,
-                name = templateUrl,
-                parts;
+                name = templateUrl;
 
             // check template parts, pop name.
             if(/\//g.test(templateUrl))
                 name = templateUrl.split('/').pop();
-            
+
             // set the genrated templateUrl
             // and the generated controller
             // checking if "controllerAs" is
             // enabled.
             if(name) {
-                let ctrlName = name;
                 opts.templateUrl = `${templateUrl}/${name}.html`;
                 if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
@@ -496,7 +518,7 @@ class Area {
                 if (obj.hasOwnProperty(prop)) {
                     if(prop === 'children'){
                         obj[prop].forEach((c, i) => {
-                            obj[prop][i] = iterateUiComponents(base, c)
+                            obj[prop][i] = iterateUiComponents(base, c);
                         });
                     }
                     if(angular.isObject(obj[prop])){
@@ -514,12 +536,9 @@ class Area {
         // path or template has been
         // provided as prefix.
         function normalizeOptions(opts){
-            //opts = self.setBase(self.pathBase, ['url', 'redirectTo'], opts);
-            // redirect should not be set to base
-            // should supply full static path.
-            opts = self.setBase(self.pathBase, ['url'], opts);
+            opts = self.setBase(self.routeBase, ['url'], opts);
             if(routerName !== 'ngNewRouter'){
-                // componentize uiRouter and ngRoute.    
+                // componentize uiRouter and ngRoute.
                 if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
                     opts = self.setBase(self.templateBase, ['templateUrl'], opts);
                 }
@@ -529,7 +548,7 @@ class Area {
                             ` componentBase must be string || empty string.`);
                     if(routerName === 'ngRoute'){
                         opts = generateComponent(self.componentBase, opts);
-                    } else {                    
+                    } else {
                         opts = iterateUiComponents(self.componentBase, opts);
                     }
                 }
@@ -577,7 +596,8 @@ class Area {
         // process single route w/ options.
         else {
 
-            if(arguments.length !== 2 || (!angular.isString(options) || !angular.isObject(options))){
+            let isStringOrObj = angular.isObject(options) || angular.isString(options);
+            if(arguments.length !== 2 || !isStringOrObj){
                 throw new Error(`Route ${path} could not be registered, the configuration invalid.`);
             }
 
@@ -586,7 +606,7 @@ class Area {
                 // if options is string
                 // assume redirect.
                 if(angular.isString(options)){
-                    options = { redirectTo: options }
+                    options = { redirectTo: options };
                 }
 
                 if(angular.isObject(options)){
@@ -606,14 +626,24 @@ class Area {
 
     /**
      * Add otherwise to routes collection.
+     * if path starts with "." or object
+     * contains "static:true" the path
+     * is considered static and is not
+     * relative to the area within it
+     * resides. The full path will be
+     * used.
      * @param path - path, object or function.
      * @returns {Area}
      */
     otherwise(path) {
-        if(angular.isString(path))
-            path = this.setBase(this.pathBase, path);
-        if(angular.isObject(path) && path.redirectTo)
-            path.redirectTo = this.setBase(this.pathBase, path.redirectTo);
+        if(angular.isString(path) && !/^\./.test(path)){
+            path = this.setBase(this.routeBase, path);
+            path = path.replace(/^\./, '');
+        }
+        if(angular.isObject(path) && path.redirectTo && !/^\./.test(path.redirectTo) && !path.static){
+            path.redirectTo = this.setBase(this.routeBase, path.redirectTo);
+            path.redirectTo = path.redirectTo.replace(/^\./, '');
+        }
         this._routes.push(['otherwise', path]);
         return this;
     }
@@ -676,7 +706,6 @@ class Area {
                 let type = k[0];
                 if(angular.isString(type) && providers[type]){
                     k.shift();
-
                     providers[type].apply(null, k);
                 } else {
                     throw new Error(`Component type ${type} invalid configuration or not supported.`);
@@ -699,13 +728,13 @@ class Area {
                         // if component, check for
                         // valid controller if not exists
                         // inject noop dummy controller.
-                        if(opts.component){
+                        if(opts && opts.component){
                             reqCtrl = self.normalizeCtrlName(opts.component);
                             if(!self.basap.contains(self._controllers, reqCtrl))
                                 providers.controller(reqCtrl, DummyCtrl);
                         }
 
-                        if(self.routerName === 'uiRouter' && opts.redirectTo)
+                        if(self.routerName === 'uiRouter' && (opts && opts.redirectTo))
                             providers.otherwise.when.call(providers.otherwise, opts.url, opts.redirectTo);
                         else
                             providers.route[self.routerConfig.whenMethod].apply(providers.route, r);
