@@ -52,7 +52,6 @@ class Area {
         this.areaBase = undefined;
 
         // prefix routes with this string.
-        // TODO: convert to routeBase currently a minor bug.
         this.routeBase = undefined;
 
         // prefix template url with this string.
@@ -207,7 +206,7 @@ class Area {
                     else {
                         if(contains(key, prop)){
                             if(prop === 'url' || prop === 'path'){
-                                if(!o.root && !self.root)
+                                if(!o.root && !self.root && !o.static)
                                     o[prop] = join(base, o[prop]);
                             } else {
                                 o[prop] = join(base, o[prop]);
@@ -503,8 +502,8 @@ class Area {
                 opts.templateUrl = `${templateUrl}/${name}.html`;
                 if(self.basap.lowerPaths !== false)
                     opts.templateUrl = opts.templateUrl.toLowerCase();
-                opts.controller = self.normalizeCtrlName(name);//
-                if(self.controllerAs !== false)
+                opts.controller = self.normalizeCtrlName(name);
+                if(self.controllerAs !== false && opts.controllerAs !== false)
                     opts.controller = `${opts.controller} as ${self.controllerAs}`;
                 opts = self.setBase(base, ['templateUrl'], opts);
             }
@@ -545,7 +544,7 @@ class Area {
                 else {
                      if(!angular.isString(self.componentBase))
                         throw new Error(`To use components with ${routerName}`+
-                            ` componentBase must be string || empty string.`);
+                            ` componentBase must be string/empty string.`);
                     if(routerName === 'ngRoute'){
                         opts = generateComponent(self.componentBase, opts);
                     } else {
@@ -573,10 +572,14 @@ class Area {
             Object.keys(path).forEach((r) => {
                 let route = path[r];
                 key = getPath(r, route);
-                route[self.areaKey] = self.name;
                 if(self.basap.lowerPaths !== false)
                     key = key.toLowerCase();
-                self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
+                if(r !== 'otherwise' && !angular.isFunction(route)){
+                    route[self.areaKey] = self.name;
+                    self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
+                } else {
+                    self._routes.push(['otherwise', route]);
+                }
             });
         }
 
@@ -595,9 +598,8 @@ class Area {
 
         // process single route w/ options.
         else {
-
-            let isStringOrObj = angular.isObject(options) || angular.isString(options);
-            if(arguments.length !== 2 || !isStringOrObj){
+            let isValid = angular.isString(options) || angular.isObject(options);
+            if(arguments.length !== 2 || !isValid){
                 throw new Error(`Route ${path} could not be registered, the configuration invalid.`);
             }
 
