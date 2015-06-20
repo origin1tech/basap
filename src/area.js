@@ -765,6 +765,28 @@ class Area {
             _module = this.module;
 
         function DummyCtrl() {}
+        
+        function normalizeComponentCtrls(obj, providers){
+            for (var prop in obj) {
+                if (obj.hasOwnProperty(prop)) {
+                    if(prop === 'children'){
+                        obj[prop].forEach((c, i) => {
+                            obj[prop][i] = normalizeComponentCtrls(c, providers);
+                        });
+                    }
+                    if(angular.isObject(obj[prop])){
+                        normalizeComponentCtrls(obj[prop], providers);
+                    }
+                }
+            }
+            // Add dummy controlller when
+            // defined controller not found.
+            if(obj.component) {
+                if(!self.basap.contains(self._controllers, obj.controllerName))
+                    providers.controller(obj.controllerName, DummyCtrl);
+            }
+            return obj; 
+        }
 
         // expose provider register methods.
         function config($injector) {
@@ -807,10 +829,17 @@ class Area {
                         // if component, check for
                         // valid controller if not exists
                         // inject noop dummy controller.
-                        if(opts && opts.component){
-                            reqCtrl = opts.controllerName; //self.normalizeCtrlName(opts.component);
-                            if(!self.basap.contains(self._controllers, reqCtrl))
-                                providers.controller(reqCtrl, DummyCtrl);
+                        if(opts){
+                            if(opts.component){
+                                //self.normalizeCtrlName(opts.component);
+                                if(!self.basap.contains(self._controllers, opts.controllerName))
+                                    providers.controller(opts.controllerName, DummyCtrl);
+                            } 
+                            // interate for nested ui-router 
+                            // controller components.
+                            else {
+                                normalizeComponentCtrls(opts, providers);
+                            }                            
                         }
 
                         if(self.routerName === 'uiRouter' && (opts && opts.redirectTo))
