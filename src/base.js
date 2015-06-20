@@ -153,6 +153,16 @@ class Base {
         // named 'SomeComponentCtrl'.
         this.onControllerName = undefined;
 
+        // when defined this function
+        // is called passing the current
+        // configuration of the component
+        // it expects a string representing
+        // the template Url to be used.
+        // it passes the component, the
+        // areaBase, componentBase and
+        // templateBase for convenience.
+        this.onComponentUrl = undefined;
+
         // when not false instance
         // add $app to window.
         this.globalize = false;
@@ -403,7 +413,7 @@ class Base {
 
         var self = this,
             globalAreaOptsKeys = ['routerName', 'routerConfig', 
-                'access', 'inherit', 'componentBase',
+                'access', 'inherit', 'componentBase', 'onComponentUrl',
                 'routeBase', 'templateBase', 'controllerSuffix',
                 'controllerAs', 'areaKey', 'onControllerName'],
             area;

@@ -98,6 +98,16 @@ class Area {
         // named 'SomeComponentCtrl'.
         this.onControllerName = undefined;
 
+        // when defined this function
+        // is called passing the current
+        // configuration of the component
+        // it expects a string representing
+        // the template Url to be used.
+        // it passes the component, the
+        // areaBase, componentBase and
+        // templateBase for convenience.
+        this.onComponentUrl = undefined;
+
         // disable the area.
         this.inactive = false;
 
@@ -306,9 +316,6 @@ class Area {
      */
     normalizeCtrlName(name){
 
-        //if(!this.controllerSuffix)
-        //    return name;
-
         var key = name,
             suffix = this.controllerSuffix;
 
@@ -316,32 +323,38 @@ class Area {
         if(/^\//.test(key))
             key = key.slice(1);
 
-        // make sure suffix is cap.
-        suffix = suffix.charAt(0).toUpperCase() + suffix.slice(1);
+        // check for user normalize func.
+        if(angular.isFunction(this.onControllerName)){
+            key = this.onControllerName(key);
+        }
 
-        // split key
-        key = key.split('/');
-        key = key.map(function(k) {
-            return k.charAt(0).toUpperCase() + k.slice(1);
-        });
-        key = key.join('');
+        else {
 
-        if(!suffix)
-            return key;
+            // make sure suffix is cap.
+            suffix = suffix.charAt(0).toUpperCase() + suffix.slice(1);
 
-        // attempt to normalize controller
-        // name to prevent mis-namiing &
-        // casing issues. when used with
-        // components.
-        var normExp =
-            new RegExp('(Controller|Ctrl|Con|Ctrls|' + this.controllerSuffix + ')$', 'gi');
-        key = key.replace(normExp, '');
+            // split key
+            key = key.split('/');
+            key = key.map(function(k) {
+                return k.charAt(0).toUpperCase() + k.slice(1);
+            });
+            key = key.join('');
 
-        // ensure key is cap.
-        //key = key.charAt(0).toUpperCase() + key.slice(1);
+            if(!suffix)
+                return key;
 
-        // combine key & suffix.
-        key = `${key}${suffix}`;
+            // attempt to normalize controller
+            // name to prevent mis-namiing &
+            // casing issues. when used with
+            // components.
+            var normExp =
+                new RegExp('(Controller|Ctrl|Con|Ctrls|' + this.controllerSuffix + ')$', 'gi');
+            key = key.replace(normExp, '');
+
+            // combine key & suffix.
+            key = `${key}${suffix}`;
+
+        }
 
         return key;
 
@@ -533,28 +546,42 @@ class Area {
 
             let templateUrl = opts.component;
 
-            // set the genrated templateUrl
-            // and the generated controller.
-            if(templateUrl) {
+            // check if user defined
+            // component url noramlize func.
+            if(angular.isFunction(self.onComponentUrl)){
+                opts.templateUrl = self.onComponentsUrl.bind(self, templateUrl, self.areaBase,
+                                                             self.componentBase, self.templateBase);
+            }
 
-                // if string starts with "/" remove.
-                if(/^\//.test(templateUrl))
-                    templateUrl = templateUrl.slice(1);
+            else {
 
-                //opts.templateUrl = `${templateUrl}/${name}.html`;
-                opts.templateUrl = `${templateUrl}.html`;
+                // set the genrated templateUrl
+                // and the generated controller.
+                if(templateUrl) {
 
-                opts.controllerName = self.normalizeCtrlName(templateUrl);
+                    // if string starts with "/" remove.
+                    if(/^\//.test(templateUrl))
+                        templateUrl = templateUrl.slice(1);
 
-                opts.controller = opts.controllerName;
+                    let name = templateUrl.split('/').pop();
 
-                if(self.controllerAs !== false && opts.controllerAs !== false)
-                    opts.controller = `${opts.controller} as ${self.controllerAs}`;
+                    opts.templateUrl = `${templateUrl}/${name}.html`;
 
-                if(self.basap.lowerPaths !== false)
-                    opts.templateUrl = opts.templateUrl.toLowerCase();
+                    opts.controllerName = self.normalizeCtrlName(templateUrl);
 
-                opts = self.setBase(base, ['templateUrl'], opts);
+                    opts.controller = opts.controllerName;
+
+                    if(self.controllerAs !== false && opts.controllerAs !== false)
+
+                        opts.controller = `${opts.controller} as ${self.controllerAs}`;
+
+                    if(self.basap.lowerPaths !== false)
+                        opts.templateUrl = opts.templateUrl.toLowerCase();
+
+                    opts = self.setBase(base, ['templateUrl'], opts);
+
+                }
+
             }
 
             return opts;
