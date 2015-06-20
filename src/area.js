@@ -39,9 +39,9 @@ class Area {
         this.dependencies = deps || [];
 
         // when true this tells Basap that
-        // this is the main area and as such
-        // routeBase should not be prepended
-        // to routes.
+        // this is the main area or an area
+        // where routeBase should not be
+        // prepended to routes.
         this.root = undefined;
 
         // area base by default is set to
@@ -77,12 +77,37 @@ class Area {
         // component controllers.
         this.controllerSuffix = undefined;
 
+        // This method if defined enables
+        // you to define how controller
+        // names are generated when a component
+        // is being componentized. when called
+        // two params are injected, the first
+        // being the component name, the second
+        // being the complete route config.
+        // You MUST return a string to be
+        // used for the controller name.
+        //
+        // By default
+        // controller names are generated based
+        // on the "component" property name.
+        // these names are always capitalized.
+        // if a component is specified as
+        // component: 'some/component' and
+        // the controller suffix is 'ctrl' it
+        // will become and look to use a controller
+        // named 'SomeComponentCtrl'.
+        this.onControllerName = undefined;
+
         // disable the area.
         this.inactive = false;
 
         // extend w/ options.
         if(options)
             angular.extend(this, options);
+
+        // normalize root allow "static"
+        // to be used as property name.
+        this.root = options.static || options.root;
 
         // check if areaBase is enabled.
         if(this.areaBase !== false){
@@ -280,12 +305,30 @@ class Area {
      * @returns {string}
      */
     normalizeCtrlName(name){
-        if(!this.controllerSuffix)
-            return name;
+
+        //if(!this.controllerSuffix)
+        //    return name;
+
         var key = name,
             suffix = this.controllerSuffix;
+
+        // if string starts with "/" remove.
+        if(/^\//.test(key))
+            key = key.slice(1);
+
         // make sure suffix is cap.
         suffix = suffix.charAt(0).toUpperCase() + suffix.slice(1);
+
+        // split key
+        key = key.split('/');
+        key = key.map(function(k) {
+            return k.charAt(0).toUpperCase() + k.slice(1);
+        });
+        key = key.join('');
+
+        if(!suffix)
+            return key;
+
         // attempt to normalize controller
         // name to prevent mis-namiing &
         // casing issues. when used with
@@ -293,11 +336,15 @@ class Area {
         var normExp =
             new RegExp('(Controller|Ctrl|Con|Ctrls|' + this.controllerSuffix + ')$', 'gi');
         key = key.replace(normExp, '');
-        // ensure key is is cap.
-        key = key.charAt(0).toUpperCase() + key.slice(1);
-        // check if already componentized.
+
+        // ensure key is cap.
+        //key = key.charAt(0).toUpperCase() + key.slice(1);
+
+        // combine key & suffix.
         key = `${key}${suffix}`;
+
         return key;
+
     }
 
     /**
@@ -321,7 +368,8 @@ class Area {
             Object.keys(c).forEach((k) => {
                 let key = k;
                 // componentize key if type controller
-                if(t === 'controller' && self.componentBase){
+                //if(t === 'controller' && self.componentBase){
+                if(t === 'controller'){
                     key = self.normalizeCtrlName(key);
                     self._controllers.push(k);
                 }
@@ -482,31 +530,33 @@ class Area {
         // componentize the configuration
         // options for the route.
         function generateComponent(base, opts) {
-            // if(arguments.length === 2){
-            //     opts = base;
-            //     base = name;
-            //     name = undefined;
-            // }
-            let templateUrl = opts.component,
-                name = templateUrl;
 
-            // check template parts, pop name.
-            if(/\//g.test(templateUrl))
-                name = templateUrl.split('/').pop();
+            let templateUrl = opts.component;
 
             // set the genrated templateUrl
-            // and the generated controller
-            // checking if "controllerAs" is
-            // enabled.
-            if(name) {
-                opts.templateUrl = `${templateUrl}/${name}.html`;
-                if(self.basap.lowerPaths !== false)
-                    opts.templateUrl = opts.templateUrl.toLowerCase();
-                opts.controller = self.normalizeCtrlName(name);
+            // and the generated controller.
+            if(templateUrl) {
+
+                // if string starts with "/" remove.
+                if(/^\//.test(templateUrl))
+                    templateUrl = templateUrl.slice(1);
+
+                //opts.templateUrl = `${templateUrl}/${name}.html`;
+                opts.templateUrl = `${templateUrl}.html`;
+
+                opts.controllerName = self.normalizeCtrlName(templateUrl);
+
+                opts.controller = opts.controllerName;
+
                 if(self.controllerAs !== false && opts.controllerAs !== false)
                     opts.controller = `${opts.controller} as ${self.controllerAs}`;
+
+                if(self.basap.lowerPaths !== false)
+                    opts.templateUrl = opts.templateUrl.toLowerCase();
+
                 opts = self.setBase(base, ['templateUrl'], opts);
             }
+
             return opts;
         }
 
@@ -731,7 +781,7 @@ class Area {
                         // valid controller if not exists
                         // inject noop dummy controller.
                         if(opts && opts.component){
-                            reqCtrl = self.normalizeCtrlName(opts.component);
+                            reqCtrl = opts.controllerName; //self.normalizeCtrlName(opts.component);
                             if(!self.basap.contains(self._controllers, reqCtrl))
                                 providers.controller(reqCtrl, DummyCtrl);
                         }

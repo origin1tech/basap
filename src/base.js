@@ -125,12 +125,33 @@ class Base {
         // follows: SomeController as ctrl.
         // where ctrl is the property defined
         // below.
-        this.controllerAs = 'ctrl';   
+        this.controllerAs = 'ctrl';
     
         // Basap needs to know what controller
         // suffix to use when wiring up
         // component controllers.
         this.controllerSuffix = undefined;
+
+        // This method if defined enables
+        // you to define how controller
+        // names are generated when a component
+        // is being componentized. when called
+        // two params are injected, the first
+        // being the component name, the second
+        // being the complete route config.
+        // You MUST return a string to be
+        // used for the controller name.
+        //
+        // By default
+        // controller names are generated based
+        // on the "component" property name.
+        // these names are always capitalized.
+        // if a component is specified as
+        // component: 'some/component' and
+        // the controller suffix is 'ctrl' it
+        // will become and look to use a controller
+        // named 'SomeComponentCtrl'.
+        this.onControllerName = undefined;
 
         // when not false instance
         // add $app to window.
@@ -384,7 +405,7 @@ class Base {
             globalAreaOptsKeys = ['routerName', 'routerConfig', 
                 'access', 'inherit', 'componentBase',
                 'routeBase', 'templateBase', 'controllerSuffix',
-                'controllerAs', 'areaKey'],
+                'controllerAs', 'areaKey', 'onControllerName'],
             area;
 
         // if only area name provided get area.

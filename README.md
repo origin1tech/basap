@@ -5,6 +5,12 @@
 Below is the basic info to get going hower you should install the project so that you 
 can run the server and view the example documentation as well as see a working app.
 
+## IMPORTANT
+
+Be sure to use jspm install with this project installing either angular-route, angular-new-router or angular-ui-router.
+These modules are excluded so that when installing this module via jspm you don't end up with unnecessary router
+modules installed. 
+
 Often it's easier to follow something already working.
 
 ### Installing
