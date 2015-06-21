@@ -184,8 +184,53 @@ class Base {
         // unique html tag or id.
         this.routerElement = 'body';
 
+        // default logger configuration.
+        // this configuration accepts any
+        // $http configuration parameter
+        // see: https://docs.angularjs.org/api/ng/service/$http
+        var logger = {
+            console:        undefined,  // when NOT false messages are logged to the console.
+            remote:         false,      // when true logs are posted to server,
+                                        // false logs to console only.
+            level:          'error',    // current log level supports 'error', 'warn', 'info', 'debug'.
+                                        // where debug is same as console.log.
+            method:         'POST',     // method to use to post to server.
+            path:           '/api/log'
+        };
+
+        // whether or not to enabled
+        // logger can either be set to
+        // true, false a config object
+        // or a function that provides
+        // context to basap.
+        // if true the default config
+        // is used.
+        // essentially this is merely a
+        // wrapper to the browser's console
+        // its usefulness is in sending
+        // the log payload to the server
+        // in a convenient way.
+        this.logger = false;
+
         // extend options.
         angular.extend(this, options);
+
+        // check if logger is enabled.
+        if(this.logger === true || this.logger){
+            // if function denote custom
+            // function should be called.
+            if(angular.isFunction(this.logger)){
+                this.loggerCustom = true;
+            }
+            // if an object merge with defaults
+            else if(angular.isObject(this.logger)) {
+                this.logger = angular.extend({}, logger, this.logger);
+            }
+            // is bool set to defaults.
+            else {
+                this.logger = logger;
+            }
+        }
 
         // if globalized add to window
         // prefixed by $ (default: $app)

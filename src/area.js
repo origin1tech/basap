@@ -32,6 +32,11 @@ class Area {
         // the area name
         this.name = name;
 
+        // enables baseCtrl titles
+        // to display a name other than
+        // the area name.
+        this.displayName = undefined;
+
         // the namespace for the area.
         this.ns = undefined;
 
@@ -111,6 +116,11 @@ class Area {
         // disable the area.
         this.inactive = false;
 
+
+        // do not allow "name" to be
+        // passed within options.
+        delete options.name;
+
         // extend w/ options.
         if(options)
             angular.extend(this, options);
@@ -118,6 +128,9 @@ class Area {
         // normalize root allow "static"
         // to be used as property name.
         this.root = options.static || options.root;
+
+        // ensure the display name.
+        this.displayName = this.displayName || this.name;
 
         // check if areaBase is enabled.
         if(this.areaBase !== false){

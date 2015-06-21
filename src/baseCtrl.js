@@ -6,10 +6,10 @@ var _routes, _menu, _breadcrumb;
  */
 class BaseCtrl {
 
-    constructor($rootScope, $basap) {
+    constructor($rootScope, $http, $basap) {
 
-        var extend = {},
-            routes;
+        var self = this,
+            extend = {};
 
         /* Extend Controller
         ************************************************/
@@ -24,9 +24,8 @@ class BaseCtrl {
         // expose rootScope
         this.$rootScope = $rootScope;
 
-        // set private variable to loaded routes.
-        if(!_routes)
-            _routes = this.routes();
+        // expose http
+        this.$http = $http;
 
         // private properties.
         Object.defineProperties(this, {
@@ -36,14 +35,56 @@ class BaseCtrl {
             // i.e. they don't change.
             _routes: {
                 value: this.routes(),
-                writable: true
+                writable: false
             }
 
         });
 
+        console.log(this);
+
         // initialize the base controller.
         this.init();
 
+    }
+
+    log(...args) {
+
+        var http = this.$http,
+            type = args.shift(),
+            msg = args.shift(),
+            subExp = /(%o|%d|%i|%s|%f)/g;
+
+        // check for string substitution.
+
+
+        // post to server.
+        if(this.logger.remote){
+
+        }
+
+        if(this.logger.console !== false){
+
+        }
+    }
+
+    error(...args) {
+        args.unshift('error');
+        log.apply(this, args);
+    }
+
+    warn(...args) {
+        args.unshift('warn');
+        log.apply(this, args);
+    }
+
+    info(...args) {
+        args.unshift('info');
+        log.apply(this, args);
+    }
+
+    debug(...args) {
+        args.unshift('log');
+        log.apply(this, args);
     }
 
     /**
@@ -51,9 +92,11 @@ class BaseCtrl {
      * @returns {string}
     */
     title(){
+
         var self = this,
             title = this.ns,
             curArea;
+
         function getArea() {
             try{
                return self[self.areaKey].current;
@@ -61,11 +104,15 @@ class BaseCtrl {
                 return undefined;
             }
         }
+
         curArea = getArea();
-        title = curArea && curArea.name ? `${title} - ${curArea.name}` : title;
+
+        title = curArea && curArea.displayName ? `${title} - ${curArea.displayName}` : title;
+
         title = title.replace(/\w\S*/g, function(txt){
             return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
         });
+
         return title;
     }
 
@@ -158,6 +205,6 @@ class BaseCtrl {
     }
 
 }
-BaseCtrl.$inject = ['$rootScope', '$basap'];
+BaseCtrl.$inject = ['$rootScope', '$http', '$basap'];
 
 export default BaseCtrl;
