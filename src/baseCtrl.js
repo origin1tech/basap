@@ -1,5 +1,3 @@
-var _routes, _menu, _breadcrumb;
-
 /**
  * Base controller class.
  * @class
@@ -40,51 +38,9 @@ class BaseCtrl {
 
         });
 
-        console.log(this);
-
         // initialize the base controller.
         this.init();
 
-    }
-
-    log(...args) {
-
-        var http = this.$http,
-            type = args.shift(),
-            msg = args.shift(),
-            subExp = /(%o|%d|%i|%s|%f)/g;
-
-        // check for string substitution.
-
-
-        // post to server.
-        if(this.logger.remote){
-
-        }
-
-        if(this.logger.console !== false){
-
-        }
-    }
-
-    error(...args) {
-        args.unshift('error');
-        log.apply(this, args);
-    }
-
-    warn(...args) {
-        args.unshift('warn');
-        log.apply(this, args);
-    }
-
-    info(...args) {
-        args.unshift('info');
-        log.apply(this, args);
-    }
-
-    debug(...args) {
-        args.unshift('log');
-        log.apply(this, args);
     }
 
     /**

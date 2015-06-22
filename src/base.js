@@ -1,4 +1,5 @@
 import angular from 'angular';
+import Logger from './logger';
 import Area from './area';
 import configs from './configs';
 import BaseCtrl from './baseCtrl';
@@ -165,7 +166,14 @@ class Base {
 
         // when not false instance
         // add $app to window.
-        this.globalize = false;
+        this.globalize = true;
+
+        // if you wish to change the name of the
+        // global you can do so here.
+        // NOTE: this will not change the name
+        // of the Angualar factory that is
+        // exposed this will still be "$basap"
+        this.globalizeAs = '$basap';
 
         // global based controller.
         this.BaseCtrl = BaseCtrl;
@@ -184,19 +192,23 @@ class Base {
         // unique html tag or id.
         this.routerElement = 'body';
 
-        // default logger configuration.
-        // this configuration accepts any
-        // $http configuration parameter
-        // see: https://docs.angularjs.org/api/ng/service/$http
-        var logger = {
-            console:        undefined,  // when NOT false messages are logged to the console.
-            remote:         false,      // when true logs are posted to server,
-                                        // false logs to console only.
-            level:          'error',    // current log level supports 'error', 'warn', 'info', 'debug'.
-                                        // where debug is same as console.log.
-            method:         'POST',     // method to use to post to server.
-            path:           '/api/log'
-        };
+        // Default logger configuration.
+        // Http requests are made via a
+        // simple API. The object accepts
+        // the following properties.
+        //var logger = {
+        //    globalize       undefined,        // when NOT false logger is added to window as $log.
+        //    console:        undefined,        // when NOT false messages are logged to the console.
+        //    remote:         false,            // when true logs are posted to server, otherwise only console.
+        //    level:          'error',          // current log level supports 'error', 'warn', 'info', 'debug'.
+        //    method:         'POST',           // method to use to post to server.
+        //    path:           '/api/log/client' // the endpoint on the server.
+        //    headers:        {}                // ex: contentType (IMPORTANT keys must be in camelcase).
+        //    async:          true              // default for XMLHttpRequests is true for asynchronous.
+        //    username:       undefined         // username to be use with credentials.
+        //    password:       undefined         // same as above.
+        //};
+
 
         // whether or not to enabled
         // logger can either be set to
@@ -210,34 +222,26 @@ class Base {
         // its usefulness is in sending
         // the log payload to the server
         // in a convenient way.
-        this.logger = false;
+        this.logger = undefined;
 
         // extend options.
         angular.extend(this, options);
 
         // check if logger is enabled.
-        if(this.logger === true || this.logger){
-            // if function denote custom
-            // function should be called.
-            if(angular.isFunction(this.logger)){
-                this.loggerCustom = true;
-            }
-            // if an object merge with defaults
-            else if(angular.isObject(this.logger)) {
-                this.logger = angular.extend({}, logger, this.logger);
-            }
-            // is bool set to defaults.
-            else {
-                this.logger = logger;
-            }
-        }
+        if(this.logger !== false)
+            this.logger = this.logger || true;
+
+        // create logger instance.
+        this.log = new Logger(this.logger, this.module);
+
+        // globalize logger if enabled.
+        if(this.log.options.globalize !== false)
+            window.$log = this.log;
 
         // if globalized add to window
         // prefixed by $ (default: $app)
-        if(this.globalize){
-            this.globalName = `$${this.ns}`;
-            window[this.globalName] = this;
-        }
+        if(this.globalize)
+            window[this.globalizeAs] = this; //`${this.ns}`;
 
         // add base controller attr if defined.
         if(this.BaseCtrl){
@@ -571,6 +575,8 @@ class Base {
     /**
      * Gets menu items from routes when
      * route options contains property "menu"
+     * nothing fancy here just allows you to decorate
+     * routes with a property for filtering out later.
      * @param [sort] - comparer to sort routes checks property "sort".
      * @returns {array}
      */
@@ -640,24 +646,6 @@ class Base {
         }
         config.$inject = ['$injector'];
 
-        // inject area into rootScope.
-        function run($injector, $rootScope) {
-
-        }
-        run.$inject = ['$injector', '$rootScope'];
-
-        // DEPRECATED: get routes from $basap factory.
-        // add factory for getting routes.
-        //function RouteFact() {
-        //    var factory = {
-        //        get: function get(area) {
-        //            return self.routes(area);
-        //        }
-        //    };
-        //    return factory;
-        //}
-        //_module.factory('$routes', RouteFact);
-
         // add main router controller.
         // you can add nested routers
         // the below is simply the base router.
@@ -667,7 +655,9 @@ class Base {
 
         // expose basap as factory
         function BasapFact () {
+
             var _instance = self;
+
             // need to extend w/methods.
             _instance.routes = self.routes.bind(self);
             _instance.tryInject = self.tryInject.bind(self);
@@ -676,8 +666,12 @@ class Base {
             _instance.providers = self.providers.bind(self);
             _instance.async = self.async.bind(self);
             _instance.menu = self.menu.bind(self);
+            _instance.log = self.log;
+
             return _instance;
+
         }
+        BasapFact.$inject = [];
         _module.factory('$basap', BasapFact);
 
         // expose base controller.
@@ -695,8 +689,8 @@ class Base {
         });
 
         promise.then(function() {
-            // exec run block.
-            _module.config(config).run(run);
+            // exec config block.
+            _module.config(config);
 
             // bootstrap to element.
             angular.element(document).ready(function () {
