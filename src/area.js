@@ -43,21 +43,18 @@ class Area {
         // area module dependencies.
         this.dependencies = deps || [];
 
-        // when true this tells Basap that
-        // this is the main area or an area
-        // where routeBase should not be
-        // prepended to routes.
-        this.root = undefined;
-
         // area base by default is set to
         // the area name. areaBase
-        // prefixes pathBase, templateBase
+        // prefixes routeBase, templateBase
         // and componentBase if defined
         // set to false to ignore.
         this.areaBase = undefined;
 
         // prefix routes with this string.
         this.routeBase = undefined;
+
+        // prefix template and component paths.
+        this.viewBase = undefined;
 
         // prefix template url with this string.
         this.templateBase = undefined;
@@ -116,7 +113,6 @@ class Area {
         // disable the area.
         this.inactive = false;
 
-
         // do not allow "name" to be
         // passed within options.
         delete options.name;
@@ -125,9 +121,14 @@ class Area {
         if(options)
             angular.extend(this, options);
 
-        // normalize root allow "static"
-        // to be used as property name.
-        this.root = options.static || options.root;
+        // check if template/componentBase
+        // have values if not inherit from
+        // viewBase.
+        if(!this.templateBase)
+            this.templateBase = this.viewBase;
+
+        if(!this.componentBase)
+            this.componentBase = this.viewBase;
 
         // ensure the display name.
         this.title = this.title !== undefined ? this.title : this.name;
@@ -253,12 +254,22 @@ class Area {
                     }
                     else {
                         if(contains(key, prop)){
-                            if(prop === 'url' || prop === 'path'){
-                                if(!o.root && !self.root && !o.static)
-                                    o[prop] = join(base, o[prop]);
-                            } else {
-                                o[prop] = join(base, o[prop]);
+                            // check if path starts with mount path
+                            // if true and is view path check if
+                            // should be static, saves some aggrevation.
+                            if(self.mount && self.mount.length){
+                                let mount = self.mount;
+                                if(mount.charAt(0) === '/')
+                                    mount = mount.replace(/^\//, '');
+                                let regexp = new RegExp(`(/${mount}|${mount})`);
+                                if(prop === 'templateUrl' && regexp.test(o[prop])){
+                                    o.staticView = true;
+                                }
                             }
+                            // don't join static routes or views.
+                            if(!o.staticView && !o.staticRoute)
+                                o[prop] = join(base, o[prop]);
+
                             if(o[prop] !== '/')
                                 o[prop] = o[prop].replace(/\/$/, '');
                         }
@@ -557,13 +568,16 @@ class Area {
         // options for the route.
         function generateComponent(base, opts) {
 
-            let templateUrl = opts.component;
+            let templateUrl;
+
+            templateUrl = opts.component;
 
             // check if user defined
             // component url noramlize func.
             if(angular.isFunction(self.onComponentUrl)){
-                opts.templateUrl = self.onComponentsUrl.bind(self, templateUrl, self.areaBase,
-                                                             self.componentBase, self.templateBase);
+                opts.templateUrl = self.onComponentsUrl
+                    .bind(self, templateUrl || opts.templateUrl, self.areaBase,
+                          self.componentBase, self.templateBase);
             }
 
             else {
@@ -618,6 +632,9 @@ class Area {
             if(obj.component) {
                 obj = generateComponent(base, obj);
             }
+            if(obj.templateUrl && !obj.component){
+                obj = self.setBase(self.templateBase, ['templateUrl'], obj);
+            }
             return obj;
         }
 
@@ -629,7 +646,8 @@ class Area {
             if(routerName !== 'ngNewRouter'){
                 // componentize uiRouter and ngRoute.
                 if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
-                    opts = self.setBase(self.templateBase, ['templateUrl'], opts);
+                    if(!opts.staticView)
+                        opts = self.setBase(self.templateBase, ['templateUrl'], opts);
                 }
                 else {
                      if(!angular.isString(self.componentBase))

@@ -6,8 +6,7 @@ class BaseCtrl {
 
     constructor($rootScope, $location, $http, $basap, $injector) {
 
-        var self = this,
-            extend = {};
+        var extend = {};
 
         /* Extend Controller
         ************************************************/

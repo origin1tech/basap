@@ -92,20 +92,22 @@ class Base {
         // enable/disable html5 mode.
         this.html5Mode = undefined;
 
-        // when not falls base paths are
-        // prepended to area paths.
-        // set to false to to use area
-        // paths only.
-        this.basePrepend = undefined;
-
         // globally prefixes all base
         // paths. used when entire directory
         // is within a sub dir from the
         // web servers's root path.
+        // NOTE: unlike mounting a router
+        // this only mounts the template
+        // and component paths NOT your
+        // routes.
         this.mount = '';
 
         // globally prepends route paths.
         this.routeBase = '';
+
+        // globally prepends view and
+        // component paths.
+        this.viewBase = '';
 
         // globally prepends view paths.
         this.templateBase = '';
@@ -227,6 +229,15 @@ class Base {
         // extend options.
         angular.extend(this, options);
 
+        // check if template/componentBase
+        // have values if not inherit from
+        // viewBase.
+        if(!this.templateBase)
+            this.templateBase = this.viewBase;
+
+        if(!this.componentBase)
+            this.componentBase = this.viewBase;
+
         // check if logger is enabled.
         if(this.logger !== false)
             this.logger = this.logger || true;
@@ -333,7 +344,7 @@ class Base {
                 return idx !== -1;
             return arr[idx];
         } else {
-            let result = undefined;
+            let result;
             values.forEach((v) => {
                 if(!result){
                     result = self.contains(arr, v, bool);
@@ -464,7 +475,7 @@ class Base {
             globalAreaOptsKeys = ['routerName', 'routerConfig', 
                 'access', 'inherit', 'componentBase', 'onComponentUrl',
                 'routeBase', 'templateBase', 'controllerSuffix',
-                'controllerAs', 'areaKey', 'onControllerName'],
+                'controllerAs', 'areaKey', 'onControllerName', 'mount'],
             area;
 
         // if only area name provided get area.
@@ -510,20 +521,20 @@ class Base {
             // overrides.
             else {
                 // prepend base paths to area paths.
-                let tmpBase = area[k] || '';
+                let tmpBase = area[k] !== undefined ? area[k] : '';
+                if(tmpBase === false){
+                    area[k] = '';
+                    return;
+                }
                 if(area.areaBase)
                     tmpBase = `${area.areaBase}/${tmpBase}`;
                 // ensure first char is backslash.
                 if(tmpBase.charAt(0) !== '/')
                     tmpBase = `/${tmpBase}`;
-                // if basePrepend prefix tmpBase
-                // with the base type path
-                // from app's options.
-                if(self.basePrepend !== false)
-                    tmpBase = self[k] + tmpBase;
-                // if no tmpBase but app options
-                // contains value of same base
-                // type set it as the path.
+                // if no tmpBase but base options
+                // contain value of same base
+                // type allow it to populate
+                // the base path.
                 if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
                     tmpBase = self[k];
                 // check for mount point.
@@ -541,6 +552,8 @@ class Base {
             }
 
         });
+
+
 
         // get area namespace.
         area.ns = area.ns || (`${this.ns}.${name}`);
@@ -577,23 +590,35 @@ class Base {
      * route options contains property "menu"
      * nothing fancy here just allows you to decorate
      * routes with a property for filtering out later.
-     * @param [sort] - comparer to sort routes checks property "sort".
+     * sorting assumes you have a numeric property called
+     * "sort" in your route configuration.
+     * @param [filter] - filters routes with "menu" property accepts true, false or function.
+     * @param [sort] - comparer to sort routes checks property "sort" accepts true or function.
      * @returns {array}
      */
-    menu(sort) {
-        var _sort = sort || function sort(a,b) {
-                if(a.sort < b.sort)
-                    return 1;
-                if(a.sort > b.sort)
-                    return 1;
-                return 0;
-            };
-        if(this._menu)
-            return this._menu;
+    menu(filter, sort) {
+
+        var _filter, _sort;
+
+        // filter function.
+        function filterRoutes(route) {
+            return route.menu;
+        }
+
+        // sort function.
+        function sortRoutes(a,b) {
+            if(a.sort < b.sort)
+                return 1;
+            if(a.sort > b.sort)
+                return 1;
+            return 0;
+        }
+
+        _filter = filter || filterRoutes;
+        _sort = sort || sortRoutes;
+
         // filter routes where "menu" property is present.
-        this._menu = this.routes().filter(function(r) {
-            return r.menu;
-        });
+        this._menu = this.routes().filter(_filter).sort(_sort);
 
         return this._menu;
     }
