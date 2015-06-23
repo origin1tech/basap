@@ -4,7 +4,7 @@
  */
 class BaseCtrl {
 
-    constructor($rootScope, $http, $basap) {
+    constructor($rootScope, $location, $http, $basap, $injector) {
 
         var self = this,
             extend = {};
@@ -25,6 +25,9 @@ class BaseCtrl {
         // expose http
         this.$http = $http;
 
+        // get the Angular injector
+        this.$injector = $injector;
+
         // private properties.
         Object.defineProperties(this, {
 
@@ -41,35 +44,6 @@ class BaseCtrl {
         // initialize the base controller.
         this.init();
 
-    }
-
-    /**
-     * Gets current title for the area in viewport.
-     * @returns {string}
-    */
-    title(){
-
-        var self = this,
-            title = this.ns,
-            curArea;
-
-        function getArea() {
-            try{
-               return self[self.areaKey].current;
-            } catch(ex){
-                return undefined;
-            }
-        }
-
-        curArea = getArea();
-
-        title = curArea && curArea.displayName ? `${title} - ${curArea.displayName}` : title;
-
-        title = title.replace(/\w\S*/g, function(txt){
-            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-        });
-
-        return title;
     }
 
     /**
@@ -100,12 +74,7 @@ class BaseCtrl {
             // add active area to $rootScope.
             this.$rootScope.$on(config.startEvent, function () {
 
-                // store current $area objects
-                // in case the route fails.
-                //origAreas = $rootScope[areaKey];
-
-                // ensure root scope area object.
-                //$rootScope[areaKey] = $rootScope[areaKey] || {};
+                // get the area.
                 self[areaKey] =  self[areaKey] || {};
 
                 // get current and next areas.
@@ -122,10 +91,26 @@ class BaseCtrl {
                 curArea = self.areas[curArea[areaKey]];
                 nextArea = self.areas[nextArea[areaKey]];
 
-                //$rootScope[areaKey].previous = curArea;
-                //$rootScope[areaKey].current = nextArea;
+                // set previous and current.
                 self[areaKey].previous = curArea;
                 self[areaKey].current = nextArea;
+
+                // set area title if enabled.
+                if(nextArea && nextArea.title) {
+                    // check if the route has a title
+                    // otherwise use area title.
+                    let title = next.title || nextArea.title;
+                    let titleElem = document.querySelector('title');
+                    if(title) {
+                        title = self.ns + ' ' + title;
+                        // convert to title case.
+                        title = title.replace(/\w\S*/g,
+                            function(txt){return txt.charAt(0).toUpperCase() +
+                                txt.substr(1).toLowerCase();
+                            });
+                        titleElem.innerText = title;
+                    }
+                }
 
                 // store prev, cur in var
                 // if route fails reset
@@ -161,6 +146,6 @@ class BaseCtrl {
     }
 
 }
-BaseCtrl.$inject = ['$rootScope', '$http', '$basap'];
+BaseCtrl.$inject = ['$rootScope', '$location', '$http', '$basap', '$injector'];
 
 export default BaseCtrl;

@@ -35,7 +35,7 @@ class Area {
         // enables baseCtrl titles
         // to display a name other than
         // the area name.
-        this.displayName = undefined;
+        this.title = undefined;
 
         // the namespace for the area.
         this.ns = undefined;
@@ -130,7 +130,7 @@ class Area {
         this.root = options.static || options.root;
 
         // ensure the display name.
-        this.displayName = this.displayName || this.name;
+        this.title = this.title !== undefined ? this.title : this.name;
 
         // check if areaBase is enabled.
         if(this.areaBase !== false){
