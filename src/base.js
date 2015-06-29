@@ -33,6 +33,7 @@ class Base {
         }
 
         // lookup verify supported router.
+        // TODO: need to change this so can't be found other than by initial array of deps.
         function lookupRouter(arr){
             arr = arr || [];
             let filtered = arr.filter(function (a) {
@@ -76,6 +77,14 @@ class Base {
 
         // define root namespace for app.
         this.ns = ns || 'app';
+
+        // an alternate name used in page
+        // title. in some cases you may wish
+        // to use an abbreviated ns which would
+        // not good for display this property
+        // allows for displaying a more readable
+        // title.
+        this.name = undefined;
 
         // main module dependencies.
         this.dependencies = deps || [];
@@ -156,15 +165,21 @@ class Base {
         // named 'SomeComponentCtrl'.
         this.onControllerName = undefined;
 
-        // when defined this function
-        // is called passing the current
-        // configuration of the component
-        // it expects a string representing
-        // the template Url to be used.
-        // it passes the component, the
-        // areaBase, componentBase and
-        // templateBase for convenience.
-        this.onComponentUrl = undefined;
+        // when creating a component
+        // this callback can be defined
+        // so that you can alter the
+        // componetized options for
+        // defining the component.
+        // the callback injects
+        // the config object, and the
+        // area configuration. expects
+        // and object to be returned
+        // containing the config object.
+        // basically this method does
+        // the heavy liften then lets
+        // you tweak controller names
+        // paths and urls.
+        this.onComponetize = undefined;
 
         // when not false instance
         // add $app to window.
@@ -229,6 +244,9 @@ class Base {
         // extend options.
         angular.extend(this, options);
 
+        // ensure we have a name for display.
+        this.name = this.name || this.ns;
+
         // check if template/componentBase
         // have values if not inherit from
         // viewBase.
@@ -291,12 +309,10 @@ class Base {
 
         // private properties.
         Object.defineProperties(this, {
-
             _menu: {
                 value: undefined,
                 writable: true
             }
-
         });
 
         return this;
@@ -473,7 +489,7 @@ class Base {
 
         var self = this,
             globalAreaOptsKeys = ['routerName', 'routerConfig', 
-                'access', 'inherit', 'componentBase', 'onComponentUrl',
+                'access', 'inherit', 'componentBase', 'onComponetize',
                 'routeBase', 'templateBase', 'controllerSuffix',
                 'controllerAs', 'areaKey', 'onControllerName', 'mount'],
             area;
@@ -586,40 +602,62 @@ class Base {
     }
 
     /**
-     * Gets menu items from routes when
-     * route options contains property "menu"
-     * nothing fancy here just allows you to decorate
-     * routes with a property for filtering out later.
-     * sorting assumes you have a numeric property called
-     * "sort" in your route configuration.
-     * @param [filter] - filters routes with "menu" property accepts true, false or function.
-     * @param [sort] - comparer to sort routes checks property "sort" accepts true or function.
+     * Gets & filters routes for menu.
+     * If no filter is provided returns all
+     * routes which contain a truthy "menu" property.
+     * when a string is passed menu must match the string,
+     * if an array is passed will match any value in the
+     * array.
+     *
+     * The "menu" property may also be comma separated string,
+     * when true the string is converted to an array amd then
+     * matched against this enables a single route to have multiple
+     * menus.
+     *
+     * ex: app.menu('public') where app is the namespace of your app.
+     * the above would return all routes where "menu" equals 'public'.
+     *
+     * @param [filter] - filters routes with "menu" property accepts undefined, string or function.
      * @returns {array}
      */
-    menu(filter, sort) {
-
-        var _filter, _sort;
-
+    menu(filter) {
+        var _filter;
         // filter function.
         function filterRoutes(route) {
-            return route.menu;
+            if(!route)
+                return;
+            // ensure valid route name.
+            route.label = route.label || route.title || route.name;
+            if(/\./g.test(route.label)){
+                let tmp = route.label.split('.');
+                route.label = tmp.pop();
+            }
+            if(filter === undefined)
+                return route.menu;
+            // ensure route.menu is defined.
+            if(route.menu !== undefined){
+                // if string split to array
+                // after trimming whitespace.
+                if(angular.isString(route.menu)){
+                    let found = false, menu;
+                    menu = route.menu.replace(/\s/g, '');
+                    menu = menu.split(',');
+                    menu.forEach(m => {
+
+                        if(!found)
+                            found = (m === filter);
+                    });
+                    return found;
+                }
+                return filter === route.menu;
+            }
+            return false;
         }
-
-        // sort function.
-        function sortRoutes(a,b) {
-            if(a.sort < b.sort)
-                return 1;
-            if(a.sort > b.sort)
-                return 1;
-            return 0;
-        }
-
-        _filter = filter || filterRoutes;
-        _sort = sort || sortRoutes;
-
+        _filter = filterRoutes;
+        if(angular.isFunction(filter))
+            _filter = filter;
         // filter routes where "menu" property is present.
-        this._menu = this.routes().filter(_filter).sort(_sort);
-
+        this._menu = this.routes().filter(_filter);
         return this._menu;
     }
 

@@ -14,7 +14,6 @@ class RouteCtrl {
         $rootScope.$watch(function () {
             return $location.path();
         }, function (newVal, oldVal) {
-            var nextPath = newVal;
             // do something on path change.
         });
 

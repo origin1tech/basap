@@ -100,15 +100,22 @@ class Area {
         // named 'SomeComponentCtrl'.
         this.onControllerName = undefined;
 
-        // when defined this function
-        // is called passing the current
-        // configuration of the component
-        // it expects a string representing
-        // the template Url to be used.
-        // it passes the component, the
-        // areaBase, componentBase and
-        // templateBase for convenience.
-        this.onComponentUrl = undefined;
+        // when creating a component
+        // this callback can be defined
+        // so that you can alter the
+        // componetized options for
+        // defining the component.
+        // the callback injects
+        // the config object, and the
+        // area configuration. expects
+        // and object to be returned
+        // containing the config object.
+        // basically this method does
+        // the heavy liften then lets
+        // you tweak controller names
+        // paths and urls.
+        this.onComponetize = undefined;
+
 
         // disable the area.
         this.inactive = false;
@@ -572,27 +579,21 @@ class Area {
 
             templateUrl = opts.component;
 
-            // check if user defined
-            // component url noramlize func.
-            if(angular.isFunction(self.onComponentUrl)){
-                opts.templateUrl = self.onComponentsUrl
-                    .bind(self, templateUrl || opts.templateUrl, self.areaBase,
-                          self.componentBase, self.templateBase);
-            }
+            // set the genrated templateUrl
+            // and the generated controller.
+            if(templateUrl) {
 
-            else {
+                // if string starts with "/" remove.
+                if(/^\//.test(templateUrl))
+                    templateUrl = templateUrl.slice(1);
 
-                // set the genrated templateUrl
-                // and the generated controller.
-                if(templateUrl) {
+                let name = templateUrl.split('/').pop();
 
-                    // if string starts with "/" remove.
-                    if(/^\//.test(templateUrl))
-                        templateUrl = templateUrl.slice(1);
+                opts.templateUrl = `${templateUrl}/${name}.html`;
 
-                    let name = templateUrl.split('/').pop();
-
-                    opts.templateUrl = `${templateUrl}/${name}.html`;
+                // if controller exists
+                // assume user defined.
+                if(!opts.controller){
 
                     opts.controllerName = self.normalizeCtrlName(templateUrl);
 
@@ -601,13 +602,22 @@ class Area {
                     if(self.controllerAs !== false && opts.controllerAs !== false)
 
                         opts.controller = `${opts.controller} as ${self.controllerAs}`;
-
-                    if(self.basap.lowerPaths !== false)
-                        opts.templateUrl = opts.templateUrl.toLowerCase();
-
-                    opts = self.setBase(base, ['templateUrl'], opts);
-
                 }
+
+
+                if(self.basap.lowerPaths !== false)
+                    opts.templateUrl = opts.templateUrl.toLowerCase();
+
+                // check for user componetized callback.
+                if(self.onComponetize){
+                    // create clone in case undefined is returned.
+                    let clone = angular.copy(opts);
+                    opts = self.onComponetize.call(opts, self);
+                    if(!opts)
+                        opts = clone;
+                }
+
+                opts = self.setBase(base, ['templateUrl'], opts);
 
             }
 

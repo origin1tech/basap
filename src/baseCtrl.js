@@ -1,10 +1,11 @@
+
 /**
  * Base controller class.
  * @class
  */
 class BaseCtrl {
 
-    constructor($rootScope, $location, $http, $basap, $injector) {
+    constructor($rootScope, $basap, $injector) {
 
         var extend = {};
 
@@ -21,24 +22,10 @@ class BaseCtrl {
         // expose rootScope
         this.$rootScope = $rootScope;
 
-        // expose http
-        this.$http = $http;
-
-        // get the Angular injector
-        this.$injector = $injector;
-
-        // private properties.
-        Object.defineProperties(this, {
-
-            // set routes as they are
-            // loaded prior to bootstrapping
-            // i.e. they don't change.
-            _routes: {
-                value: this.routes(),
-                writable: false
-            }
-
-        });
+        // if uiRouter get state.
+        if(this.routerName === 'uiRouter'){
+            this.$state = this.tryInject($injector, '$state');
+        }
 
         // initialize the base controller.
         this.init();
@@ -46,7 +33,10 @@ class BaseCtrl {
     }
 
     /**
+     * TODO: need to redo this method looks ugly could improve table until have time.
      * Initialize routing event listeners.
+     * for detecting areas and defining
+     * page titles.
      */
     init() {
 
@@ -61,13 +51,18 @@ class BaseCtrl {
             let cur = 2,
                 next = 1,
                 areaKey = this.areaKey,
+                $rootScope = this.$rootScope,
+                stRteKey = 'State',
                 curArea, nextArea,
+                curRoute, nextRoute,
                 origAreas;
 
             // params for current route
             // in 3 pos withing arguments.
             if(this.routerName === 'uiRouter')
                 cur = 3;
+            else
+                stRteKey = 'Route';
 
             // listen for route start events
             // add active area to $rootScope.
@@ -82,10 +77,44 @@ class BaseCtrl {
 
                 // if no curArea initial
                 // page load set to home area.
-                if(!curArea){
+                if(!curArea)
                     curArea = nextArea;
+
+                // set current and next route data.
+                if(curArea.$$route){
+                    curRoute = curArea.$$route;
+                    nextRoute = nextArea.$$route;
+                } else {
+                    curRoute = curArea;
+                    nextRoute = nextArea;
+                    if(self.$state){
+                        if(curRoute && curRoute.regexp)
+                            delete curRoute.regexp;
+                        nextRoute.regexp = self.$state.$current.url.regexp;
+                    }
                 }
 
+                // handle route titles.
+                curRoute.title = curRoute.title || curRoute.name;
+                nextRoute.title = nextRoute.title || nextRoute.name;
+
+                if(/\./g.test(curRoute.title )){
+                    let tmp = curRoute.title .split('.');
+                    curRoute.title  = tmp.pop();
+                }
+
+                if(/\./g.test(nextRoute.title )){
+                    let tmp = nextRoute.title .split('.');
+                    nextRoute.title  = tmp.pop();
+                }
+
+                if(curRoute.title)
+                    curRoute.title = curRoute.title.charAt(0).toUpperCase() +
+                                     curRoute.title.slice(1);
+                if(nextRoute.title)
+                    nextRoute.title = nextRoute.title.charAt(0).toUpperCase() +
+                                      nextRoute.title.slice(1);
+                
                 // lookup the areas.
                 curArea = self.areas[curArea[areaKey]];
                 nextArea = self.areas[nextArea[areaKey]];
@@ -98,15 +127,15 @@ class BaseCtrl {
                 if(nextArea && nextArea.title) {
                     // check if the route has a title
                     // otherwise use area title.
-                    let title = next.title || nextArea.title;
+                    let title = nextRoute.title || nextArea.title;
                     let titleElem = document.querySelector('title');
                     if(title) {
-                        title = self.ns + ' ' + title;
                         // convert to title case.
                         title = title.replace(/\w\S*/g,
                             function(txt){return txt.charAt(0).toUpperCase() +
                                 txt.substr(1).toLowerCase();
                             });
+                        title = self.name + ' ' + title;
                         titleElem.innerText = title;
                     }
                 }
@@ -119,18 +148,28 @@ class BaseCtrl {
                     current: nextArea
                 };
 
+                // set the active state/route.
+                $rootScope[`prev${stRteKey}`] = self[`prev${stRteKey}`] = curRoute;
+                $rootScope[`active${stRteKey}`] = self[`active${stRteKey}`] = nextRoute;
             });
 
             // listen for route error events
-            this.$rootScope.$on(config.successEvent, function () {
+            this.$rootScope.$on(config.successEvent, function (...args) {
                 origAreas = undefined;
+                curRoute = undefined;
+                nextRoute = undefined;
+                if(self.$state){
+                    let to = args[1];
+                    if(to.params && to.params.invoke)
+                        self.$state.go(to.params.invoke);
+                }
             });
 
             // listen for route error events
             this.$rootScope.$on(config.errorEvent, function () {
                 // set back to original areas
-                //$rootScope[areaKey] = origAreas;
                 self[areaKey] = origAreas;
+                $rootScope[`active${stRteKey}`] = self[`active${stRteKey}`] = curRoute;
             });
 
         }
@@ -145,6 +184,6 @@ class BaseCtrl {
     }
 
 }
-BaseCtrl.$inject = ['$rootScope', '$location', '$http', '$basap', '$injector'];
+BaseCtrl.$inject = ['$rootScope', '$basap', '$injector'];
 
 export default BaseCtrl;
