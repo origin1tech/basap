@@ -624,32 +624,48 @@ class Base {
         var _filter;
         // filter function.
         function filterRoutes(route) {
+
             if(!route)
                 return;
+
+            // if menu convert to object if string.
+            if(route.menu && angular.isString(route.menu))
+                route.menu = { name: route.menu };
+
+            route.menu = route.menu || {};
+
             // ensure valid route name.
-            route.label = route.label || route.title || route.name;
-            if(/\./g.test(route.label)){
-                let tmp = route.label.split('.');
-                route.label = tmp.pop();
+            // title -  is used as the header title in page.
+            // label - the name displayed as the link text in your menu.
+
+            route.menu.label = route.menu.label || route.title || route.name;
+            // check for ui-router state name
+            if(/\./g.test(route.menu.label)){
+                // split and pop last key in state name.
+                let tmp = route.menu.label.split('.');
+                route.menu.label = tmp.pop();
             }
+
+            // if filter is undefined
+            // return all where menu is truthy.
             if(filter === undefined)
                 return route.menu;
+
             // ensure route.menu is defined.
-            if(route.menu !== undefined){
+            if(Object.keys(route.menu).length){
                 // if string split to array
                 // after trimming whitespace.
-                if(angular.isString(route.menu)){
+                if(angular.isString(route.menu.name)){
                     let found = false, menu;
-                    menu = route.menu.replace(/\s/g, '');
+                    menu = route.menu.name.replace(/\s/g, '');
                     menu = menu.split(',');
                     menu.forEach(m => {
-
                         if(!found)
                             found = (m === filter);
                     });
                     return found;
                 }
-                return filter === route.menu;
+                return filter === route.menu.name;
             }
             return false;
         }
