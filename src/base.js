@@ -794,12 +794,14 @@ Base.instance = undefined;
  * @returns {Base}
  */
 function get(ns, deps, options) {
+
     if(!Base.instance){
         Base.instance = new Base(ns, deps, options);
         Base.constructor = null;
     }
     return Base.instance;
 }
+
 
 
 export default get;
