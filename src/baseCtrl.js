@@ -120,8 +120,12 @@ class BaseCtrl {
                 nextArea = self.areas[nextArea[areaKey]];
 
                 // set previous and current.
-                self[areaKey].previous = curArea;
+                self[areaKey].previous = curArea || {};
                 self[areaKey].current = nextArea;
+
+                // extend with route config info.
+                self[areaKey].previous.route = curRoute;
+                self[areaKey].current.route = nextRoute;
 
                 // set area title if enabled.
                 if(nextArea && nextArea.title) {
@@ -151,6 +155,7 @@ class BaseCtrl {
                 // set the active state/route.
                 $rootScope[`prev${stRteKey}`] = self[`prev${stRteKey}`] = curRoute;
                 $rootScope[`active${stRteKey}`] = self[`active${stRteKey}`] = nextRoute;
+
             });
 
             // listen for route error events

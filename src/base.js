@@ -112,7 +112,7 @@ class Base {
         this.mount = '';
 
         // globally prepends route paths.
-        this.routeBase = '';
+        this.routeBase = undefined;
 
         // globally prepends view and
         // component paths.
@@ -319,6 +319,25 @@ class Base {
     }
 
     /**
+     * Enables setting options after initializing basap.
+     * This method however has no concept of timing.
+     * For example you may wish to set a base path.
+     * You must do this prior to calling app.when()
+     * or the setting will have no effect. This likewise
+     * applies to components and so on.
+     * @param {String} key - the key anme to be updated.
+     * @param {*} [value] - the value to be set.
+     * @returns {Base}
+     */
+    set(key, value){
+        if(angular.isObject(key))
+            angular.extend(this, key);
+        else
+            this[key] = value !== undefined ? value : this[key];
+        return this;
+    }
+
+    /**
      * Simple check if value is
      * a boolean object.
      * @param val
@@ -488,7 +507,7 @@ class Base {
     area(name, deps, options) {
 
         var self = this,
-            globalAreaOptsKeys = ['routerName', 'routerConfig', 
+            globalAreaOptsKeys = ['routerName', 'routerConfig',
                 'access', 'inherit', 'componentBase', 'onComponetize',
                 'routeBase', 'templateBase', 'controllerSuffix',
                 'controllerAs', 'areaKey', 'onControllerName', 'mount'],
@@ -523,53 +542,66 @@ class Base {
 
         // set default area options
         // if not defined.
-        globalAreaOptsKeys.forEach((k) => {
-            // if not a base type
-            // and area's key has no
-            // value, simply update
-            // from app options property.
-            if(!self.contains(['routeBase', 'templateBase', 'componentBase'], k)){
-                if(area[k] === undefined)
-                    area[k] = self[k];
-            }
-            // if key is a base type
-            // check for prepends and
-            // overrides.
-            else {
-                // prepend base paths to area paths.
-                let tmpBase = area[k] !== undefined ? area[k] : '';
-                if(tmpBase === false){
-                    area[k] = '';
-                    return;
-                }
-                if(area.areaBase)
-                    tmpBase = `${area.areaBase}/${tmpBase}`;
-                // ensure first char is backslash.
-                if(tmpBase.charAt(0) !== '/')
-                    tmpBase = `/${tmpBase}`;
-                // if no tmpBase but base options
-                // contain value of same base
-                // type allow it to populate
-                // the base path.
-                if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
-                    tmpBase = self[k];
-                // check for mount point.
-                // routeBase should NOT be
-                // prepended with mount point.
-                if(k !== 'routeBase')
-                    tmpBase = `${self.mount || ''}/${tmpBase}`;
-                // ensure no double backslashes.
-                tmpBase = tmpBase.replace(/\/\//g, '/');
-                // remove trailing slash.
-                tmpBase = tmpBase.replace(/\/$/, '');
-                // finally update the base type
-                // with the tmpBase value.
-                area[k] = tmpBase || '';
-            }
-
-        });
-
-
+        //globalAreaOptsKeys.forEach((k) => {
+        //
+        //    // if not a base type
+        //    // and area's key has no
+        //    // value, simply update
+        //    // from app options property.
+        //    if(!self.contains(['routeBase', 'templateBase', 'componentBase'], k)){
+        //        if(area[k] === undefined)
+        //            area[k] = self[k];
+        //    }
+        //    // if key is a base type
+        //    // check for prepends and
+        //    // overrides.
+        //    else {
+        //        // prepend base paths to area paths.
+        //        let tmpBase = area[k] !== undefined ? area[k] : '';
+        //
+        //        // if tmpBase is false
+        //        // set to empty string and return.
+        //        if(tmpBase === false){
+        //            area[k] = '';
+        //            return;
+        //        }
+        //
+        //        // routes usually need to be
+        //        // as defined if basap and
+        //        // area routeBase both undefined
+        //        // set to empty string and return.
+        //        if(k === 'routeBase' && self[k] === undefined && area[k] === undefined){
+        //            area[k] = '';
+        //            return;
+        //        }
+        //
+        //
+        //        if(area.areaBase)
+        //            tmpBase = `${area.areaBase}/${tmpBase}`;
+        //        // ensure first char is backslash.
+        //        if(tmpBase.charAt(0) !== '/')
+        //            tmpBase = `/${tmpBase}`;
+        //        // if no tmpBase but base options
+        //        // contain value of same base
+        //        // type allow it to populate
+        //        // the base path.
+        //        if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
+        //            tmpBase = self[k];
+        //        // check for mount point.
+        //        // routeBase should NOT be
+        //        // prepended with mount point.
+        //        if(k !== 'routeBase')
+        //            tmpBase = `${self.mount || ''}/${tmpBase}`;
+        //        // ensure no double backslashes.
+        //        tmpBase = tmpBase.replace(/\/\//g, '/');
+        //        // remove trailing slash.
+        //        tmpBase = tmpBase.replace(/\/$/, '');
+        //        // finally update the base type
+        //        // with the tmpBase value.
+        //        area[k] = tmpBase || '';
+        //    }
+        //
+        //});
 
         // get area namespace.
         area.ns = area.ns || (`${this.ns}.${name}`);
@@ -586,6 +618,9 @@ class Base {
 
         // expose app instance to area.
         area.basap = this;
+
+        // set base paths.
+        area.reBase();
 
         // get area routes or all routes.
         area.getRoutes = function getRoutes (all) {

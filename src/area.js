@@ -26,6 +26,13 @@ class Area {
             delete options.dependencies;
         }
 
+        // store original options
+        // this simple provides a way
+        // to pass any option the user
+        // may wish and access by
+        // app.$area.current.options[ /* YOUR_OPTION */ ]
+        this.options = angular.copy(options || {});
+
         /* Public properties
         ***********************************/
 
@@ -339,6 +346,93 @@ class Area {
     }
 
     /**
+     * Updates base paths after area has been created.
+     * This is useful when you want to set options in
+     * basap and you want changes to be reflected in
+     * @returns {Area}
+     */
+    reBase() {
+
+        var baseKeys = [
+                'routerName', 'routerConfig',
+                'access', 'inherit', 'componentBase', 'onComponetize',
+                'routeBase', 'templateBase', 'controllerSuffix',
+                'controllerAs', 'areaKey', 'onControllerName', 'mount'
+            ],
+            area = this,
+            basap = this.basap;
+
+        baseKeys.forEach((k) => {
+
+            // if not a base type
+            // and area's key has no
+            // value, simply update
+            // from app options property.
+            if(!basap.contains(['routeBase', 'templateBase', 'componentBase'], k)){
+                if(area[k] === undefined)
+                    area[k] = basap[k];
+            }
+            // if key is a base type
+            // check for prepends and
+            // overrides.
+            else {
+                // prepend base paths to area paths.
+                let tmpBase = area[k] !== undefined ? area[k] : '';
+
+                // if tmpBase is false
+                // set to empty string and return.
+                if(tmpBase === false){
+                    area[k] = '';
+                    return;
+                }
+
+                // routes usually need to be
+                // as defined if basap and
+                // area routeBase both undefined
+                // set to empty string and return.
+                if(k === 'routeBase' && basap[k] === undefined && area[k] === undefined){
+                    area[k] = '';
+                    return;
+                }
+
+                // set area base.
+                if(area.areaBase)
+                    tmpBase = `${area.areaBase}/${tmpBase}`;
+
+                // ensure first char is backslash.
+                if(tmpBase.charAt(0) !== '/')
+                    tmpBase = `/${tmpBase}`;
+
+                // if no tmpBase but base options
+                // contain value of same base
+                // type allow it to populate
+                // the base path.
+                if(!tmpBase || !tmpBase.length && (basap[k] && basap[k].length))
+                    tmpBase = basap[k];
+
+                // check for mount point.
+                // routeBase should NOT be
+                // prepended with mount point.
+                if(k !== 'routeBase')
+                    tmpBase = `${basap.mount || ''}/${tmpBase}`;
+
+                // ensure no double backslashes.
+                tmpBase = tmpBase.replace(/\/\//g, '/');
+
+                // remove trailing slash.
+                tmpBase = tmpBase.replace(/\/$/, '');
+
+                // finally update the base type
+                // with the tmpBase value.
+                area[k] = tmpBase || '';
+            }
+
+        });
+
+        return this;
+    }
+
+    /**
      * Normalizes controller names to prevent
      * casing issues or invalid suffix when
      * using component feature.
@@ -429,11 +523,14 @@ class Area {
         // object containing collection
         // of component types.
         if(arguments.length === 1) {
+
             if(!angular.isObject(type) && !angular.isArray(type))
                 throw new Error(`Failed to load component collection of type ${typeof type}.`);
+
             Object.keys(type).forEach(function (k){
                 addComponent(k, type[k]);
             });
+
         } else {
 
              // lower and strip plural.
@@ -456,7 +553,10 @@ class Area {
                 component[name] = orig;
             }
             addComponent(type, component);
+
         }
+
+        return this;
 
     }
 
@@ -639,12 +739,14 @@ class Area {
                     }
                 }
             }
+
             if(obj.component) {
                 obj = generateComponent(base, obj);
             }
             if(obj.templateUrl && !obj.component){
                 obj = self.setBase(self.templateBase, ['templateUrl'], obj);
             }
+
             return obj;
         }
 
@@ -652,8 +754,10 @@ class Area {
         // path or template has been
         // provided as prefix.
         function normalizeOptions(opts){
+
             opts = self.setBase(self.routeBase, ['url'], opts);
-            if(routerName !== 'ngNewRouter'){
+
+            if(routerName !== 'ngNewRouter') {
                 // componentize uiRouter and ngRoute.
                 if(!self.basap.contains(Object.keys(opts), ['views', 'children', 'component'])){
                     if(!opts.staticView)
@@ -670,6 +774,7 @@ class Area {
                     }
                 }
             }
+
             return opts;
         }
 
