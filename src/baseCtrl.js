@@ -5,9 +5,11 @@
  */
 class BaseCtrl {
 
-    constructor($rootScope, $basap, $injector) {
+    constructor($rootScope, $basap, $injector, $timeout) {
 
         var extend = {};
+
+        this.$timeout = $timeout;
 
         /* Extend Controller
         ************************************************/
@@ -43,6 +45,8 @@ class BaseCtrl {
         var self = this,
             config = this.routerConfig;
 
+        var $timeout = this.$timeout;
+
         // angular 2.x router does not
         // expose start, change, error
         // broadcast events.
@@ -68,107 +72,119 @@ class BaseCtrl {
             // add active area to $rootScope.
             this.$rootScope.$on(config.startEvent, function () {
 
-                // get the area.
-                self[areaKey] =  self[areaKey] || {};
+                // race issue, use try/catch
+                // in interim to prevent err.
+                try {
 
-                // get current and next areas.
-                curArea = arguments[cur] ? arguments[cur] : undefined;
-                nextArea = arguments[next] ? arguments[next]: undefined;
+                    // get the area.
+                    self[areaKey] =  self[areaKey] || {};
 
-                // if no curArea initial
-                // page load set to home area.
-                if(!curArea)
-                    curArea = nextArea;
+                    // get current and next areas.
+                    curArea = arguments[cur] ? arguments[cur] : undefined;
+                    nextArea = arguments[next] ? arguments[next]: undefined;
 
-                // set current and next route data.
-                if(curArea.$$route){
-                    curRoute = curArea.$$route;
-                    nextRoute = nextArea.$$route;
-                } else {
-                    curRoute = curArea;
-                    nextRoute = nextArea;
-                    if(self.$state){
-                        if(curRoute && curRoute.regexp)
-                            delete curRoute.regexp;
-                        nextRoute.regexp = self.$state.$current.url.regexp;
+                    // if no curArea initial
+                    // page load set to home area.
+                    if(!curArea)
+                        curArea = nextArea;
+
+                    // set current and next route data.
+                    if(curArea.$$route){
+                        curRoute = curArea.$$route;
+                        nextRoute = nextArea.$$route;
+                    } else {
+                        curRoute = curArea;
+                        nextRoute = nextArea;
+                        if(self.$state){
+                            if(curRoute && curRoute.regexp)
+                                delete curRoute.regexp;
+                            nextRoute.regexp = self.$state.$current.url.regexp;
+                        }
                     }
-                }
 
-                // handle route titles.
-                curRoute.title = curRoute.title || curRoute.name;
-                nextRoute.title = nextRoute.title || nextRoute.name;
+                    // handle route titles.
+                    curRoute.title = curRoute.title || curRoute.name;
+                    nextRoute.title = nextRoute.title || nextRoute.name;
 
-                if(/\./g.test(curRoute.title )){
-                    let tmp = curRoute.title .split('.');
-                    curRoute.title  = tmp.pop();
-                }
+                    if(/\./g.test(curRoute.title )){
+                        let tmp = curRoute.title .split('.');
+                        curRoute.title  = tmp.pop();
+                    }
 
-                if(/\./g.test(nextRoute.title )){
-                    let tmp = nextRoute.title .split('.');
-                    nextRoute.title  = tmp.pop();
-                }
+                    if(/\./g.test(nextRoute.title )){
+                        let tmp = nextRoute.title .split('.');
+                        nextRoute.title  = tmp.pop();
+                    }
 
-                if(curRoute.title)
-                    curRoute.title = curRoute.title.charAt(0).toUpperCase() +
-                                     curRoute.title.slice(1);
-                if(nextRoute.title)
-                    nextRoute.title = nextRoute.title.charAt(0).toUpperCase() +
-                                      nextRoute.title.slice(1);
-                
-                // lookup the areas.
-                curArea = self.areas[curArea[areaKey]];
-                nextArea = self.areas[nextArea[areaKey]];
+                    if(curRoute.title)
+                        curRoute.title = curRoute.title.charAt(0).toUpperCase() +
+                            curRoute.title.slice(1);
+                    if(nextRoute.title)
+                        nextRoute.title = nextRoute.title.charAt(0).toUpperCase() +
+                            nextRoute.title.slice(1);
 
-                // set previous and current.
-                self[areaKey].previous = curArea || {};
-                self[areaKey].current = nextArea;
+                    // lookup the areas.
+                    curArea = self.areas[curArea[areaKey]];
+                    nextArea = self.areas[nextArea[areaKey]];
 
-                // extend with route config info.
-                self[areaKey].previous.route = curRoute;
-                if(self[areaKey].current)
+                    // set previous and current.
+                    self[areaKey].previous = curArea || {};
+                    self[areaKey].current = nextArea;
+
+                    // extend with route config info.
+                    self[areaKey].previous.route = curRoute;
                     self[areaKey].current.route = nextRoute;
 
-                // set area title if enabled.
-                if(nextArea && nextArea.title) {
-                    // check if the route has a title
-                    // otherwise use area title.
-                    let title = nextRoute.title || nextArea.title;
-                    let titleElem = document.querySelector('title');
-                    if(title) {
-                        // convert to title case.
-                        title = title.replace(/\w\S*/g,
-                            function(txt){return txt.charAt(0).toUpperCase() +
-                                txt.substr(1).toLowerCase();
-                            });
-                        title = self.name + ' ' + title;
-                        titleElem.innerText = title;
+                    // set area title if enabled.
+                    if(nextArea && nextArea.title) {
+                        // check if the route has a title
+                        // otherwise use area title.
+                        let title = nextRoute.title || nextArea.title;
+                        let titleElem = document.querySelector('title');
+                        if(title) {
+                            // convert to title case.
+                            title = title.replace(/\w\S*/g,
+                                function(txt){return txt.charAt(0).toUpperCase() +
+                                    txt.substr(1).toLowerCase();
+                                });
+                            title = self.name + ' ' + title;
+                            titleElem.innerText = title;
+                        }
                     }
+
+                    // store prev, cur in var
+                    // if route fails reset
+                    // clear on route success.
+                    origAreas = {
+                        previous: curArea,
+                        current: nextArea
+                    };
+
+                    // set the active state/route.
+                    $rootScope[`prev${stRteKey}`] = self[`prev${stRteKey}`] = curRoute;
+                    $rootScope[`active${stRteKey}`] = self[`active${stRteKey}`] = nextRoute;
+
+                } catch(e) {
+
                 }
-
-                // store prev, cur in var
-                // if route fails reset
-                // clear on route success.
-                origAreas = {
-                    previous: curArea,
-                    current: nextArea
-                };
-
-                // set the active state/route.
-                $rootScope[`prev${stRteKey}`] = self[`prev${stRteKey}`] = curRoute;
-                $rootScope[`active${stRteKey}`] = self[`active${stRteKey}`] = nextRoute;
 
             });
 
             // listen for route error events
             this.$rootScope.$on(config.successEvent, function (...args) {
-                origAreas = undefined;
-                curRoute = undefined;
-                nextRoute = undefined;
+
                 if(self.$state){
                     let to = args[1];
                     if(to.params && to.params.invoke)
                         self.$state.go(to.params.invoke);
                 }
+
+                $timeout(function() {
+                    origAreas = undefined;
+                    curRoute = undefined;
+                    nextRoute = undefined;
+                })
+
             });
 
             // listen for route error events
@@ -190,6 +206,6 @@ class BaseCtrl {
     }
 
 }
-BaseCtrl.$inject = ['$rootScope', '$basap', '$injector'];
+BaseCtrl.$inject = ['$rootScope', '$basap', '$injector', '$timeout'];
 
 export default BaseCtrl;
