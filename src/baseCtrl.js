@@ -125,7 +125,8 @@ class BaseCtrl {
 
                 // extend with route config info.
                 self[areaKey].previous.route = curRoute;
-                self[areaKey].current.route = nextRoute;
+                if(self[areaKey].current)
+                    self[areaKey].current.route = nextRoute;
 
                 // set area title if enabled.
                 if(nextArea && nextArea.title) {
