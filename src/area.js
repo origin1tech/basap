@@ -123,9 +123,15 @@ class Area {
         // paths and urls.
         this.onComponetize = undefined;
 
-
         // disable the area.
         this.inactive = false;
+
+        // The areas security access levels.
+        // The property is attached to each route
+        // in the area. it is used for filtering
+        // and preventing access to routes based on
+        // access level.
+        this.acl = undefined;
 
         // do not allow "name" to be
         // passed within options.
@@ -357,7 +363,7 @@ class Area {
                 'routerName', 'routerConfig',
                 'access', 'inherit', 'componentBase', 'onComponetize',
                 'routeBase', 'templateBase', 'controllerSuffix',
-                'controllerAs', 'areaKey', 'onControllerName', 'mount'
+                'controllerAs', 'areaKey', 'aclKey', 'onControllerName', 'mount'
             ],
             area = this,
             basap = this.basap;
@@ -660,6 +666,7 @@ class Area {
                 key = route.path || key;
                 key = self.setBase(self.routeBase, key);
             }
+
             if(routerName === 'uiRouter' && route.state !== undefined){
                 route.url = route.url || route.path;
                 route.path = route.url;
@@ -799,6 +806,7 @@ class Area {
                     key = key.toLowerCase();
                 if(r !== 'otherwise' && !angular.isFunction(route)){
                     route[self.areaKey] = self.name;
+                    route[self.aclKey] = route[self.aclKey] || self.acl;
                     self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
                 } else {
                     self._routes.push(['otherwise', route]);
@@ -812,6 +820,7 @@ class Area {
                 key = getPath(null, route);
                 if(key){
                     route[self.areaKey] = self.name;
+                    route[self.aclKey] = route[self.aclKey] || self.acl;
                     if(self.basap.lowerPaths !== false)
                         key = key.toLowerCase();
                     self._routes.push(normalizeRouteArray(key, normalizeOptions(route)));
@@ -837,6 +846,8 @@ class Area {
                 if(angular.isObject(options)){
                     key = getPath(path, options);
                     options[self.areaKey] = self.name;
+                    options[self.aclKey] = self.acl;
+                    options[self.aclKey] = options[self.aclKey] || self.acl;
                     if(self.basap.lowerPaths !== false)
                         key = key.toLowerCase();
                     self._routes.push(normalizeRouteArray(key, normalizeOptions(options)));
@@ -911,7 +922,7 @@ class Area {
             _module = this.module;
 
         function DummyCtrl() {}
-        
+
         function normalizeComponentCtrls(obj, providers){
             for (var prop in obj) {
                 if (obj.hasOwnProperty(prop)) {
@@ -931,7 +942,7 @@ class Area {
                 if(!self.basap.contains(self._controllers, obj.controllerName))
                     providers.controller(obj.controllerName, DummyCtrl);
             }
-            return obj; 
+            return obj;
         }
 
         // expose provider register methods.
@@ -980,12 +991,12 @@ class Area {
                                 //self.normalizeCtrlName(opts.component);
                                 if(!self.basap.contains(self._controllers, opts.controllerName))
                                     providers.controller(opts.controllerName, DummyCtrl);
-                            } 
-                            // interate for nested ui-router 
+                            }
+                            // interate for nested ui-router
                             // controller components.
                             else {
                                 normalizeComponentCtrls(opts, providers);
-                            }                            
+                            }
                         }
 
                         if(self.routerName === 'uiRouter' && (opts && opts.redirectTo))

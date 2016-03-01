@@ -138,7 +138,7 @@ class Base {
         // where ctrl is the property defined
         // below.
         this.controllerAs = 'ctrl';
-    
+
         // Basap needs to know what controller
         // suffix to use when wiring up
         // component controllers.
@@ -241,6 +241,13 @@ class Base {
         // in a convenient way.
         this.logger = undefined;
 
+        // the key name added to $rootScope.
+        this.areaKey = '$area';
+
+        // The property name used when
+        // attaching security lists to area routes.
+        this.aclKey = 'acl';
+
         // extend options.
         angular.extend(this, options);
 
@@ -303,9 +310,6 @@ class Base {
 
         // ensure controllerSuffix
         this.controllerSuffix = this.controllerSuffix || 'Ctrl';
-
-        // the key name added to $rootScope.
-        this.areaKey = '$area';
 
         // private properties.
         Object.defineProperties(this, {
@@ -507,10 +511,6 @@ class Base {
     area(name, deps, options) {
 
         var self = this,
-            globalAreaOptsKeys = ['routerName', 'routerConfig',
-                'access', 'inherit', 'componentBase', 'onComponetize',
-                'routeBase', 'templateBase', 'controllerSuffix',
-                'controllerAs', 'areaKey', 'onControllerName', 'mount'],
             area;
 
         // if only area name provided get area.
@@ -539,69 +539,6 @@ class Base {
 
         // create area instance.
         area = new Area(name, options);
-
-        // set default area options
-        // if not defined.
-        //globalAreaOptsKeys.forEach((k) => {
-        //
-        //    // if not a base type
-        //    // and area's key has no
-        //    // value, simply update
-        //    // from app options property.
-        //    if(!self.contains(['routeBase', 'templateBase', 'componentBase'], k)){
-        //        if(area[k] === undefined)
-        //            area[k] = self[k];
-        //    }
-        //    // if key is a base type
-        //    // check for prepends and
-        //    // overrides.
-        //    else {
-        //        // prepend base paths to area paths.
-        //        let tmpBase = area[k] !== undefined ? area[k] : '';
-        //
-        //        // if tmpBase is false
-        //        // set to empty string and return.
-        //        if(tmpBase === false){
-        //            area[k] = '';
-        //            return;
-        //        }
-        //
-        //        // routes usually need to be
-        //        // as defined if basap and
-        //        // area routeBase both undefined
-        //        // set to empty string and return.
-        //        if(k === 'routeBase' && self[k] === undefined && area[k] === undefined){
-        //            area[k] = '';
-        //            return;
-        //        }
-        //
-        //
-        //        if(area.areaBase)
-        //            tmpBase = `${area.areaBase}/${tmpBase}`;
-        //        // ensure first char is backslash.
-        //        if(tmpBase.charAt(0) !== '/')
-        //            tmpBase = `/${tmpBase}`;
-        //        // if no tmpBase but base options
-        //        // contain value of same base
-        //        // type allow it to populate
-        //        // the base path.
-        //        if(!tmpBase || !tmpBase.length && (self[k] && self[k].length))
-        //            tmpBase = self[k];
-        //        // check for mount point.
-        //        // routeBase should NOT be
-        //        // prepended with mount point.
-        //        if(k !== 'routeBase')
-        //            tmpBase = `${self.mount || ''}/${tmpBase}`;
-        //        // ensure no double backslashes.
-        //        tmpBase = tmpBase.replace(/\/\//g, '/');
-        //        // remove trailing slash.
-        //        tmpBase = tmpBase.replace(/\/$/, '');
-        //        // finally update the base type
-        //        // with the tmpBase value.
-        //        area[k] = tmpBase || '';
-        //    }
-        //
-        //});
 
         // get area namespace.
         area.ns = area.ns || (`${this.ns}.${name}`);

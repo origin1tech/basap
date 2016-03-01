@@ -1,4 +1,4 @@
 .gitignore
-jspm_packages
+jspm_packages/*
 wercker.yml
 .jshintrc
