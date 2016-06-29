@@ -1,4 +1,7 @@
-import angular from 'angular';
+//import angular from 'angular';
+
+if (!angular)
+  angular = window.angular;
 
 /**
  * Represents Area module containing its components.

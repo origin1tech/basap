@@ -1,6 +1,6 @@
 {
   "name": "basap",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "description": "Angular 1.x ES6 base app register module. ",
   "main": "src/base.js",
   "scripts": {
@@ -42,6 +42,9 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "babel-preset-es2015": "^6.9.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.0.1",
     "del": "^1.1.1",
     "gulp": "^3.8.11",
     "gulp-bump": "^0.3.0",
@@ -52,9 +55,11 @@
     "gulp-notify": "^2.2.0",
     "gulp-plumber": "^1.0.0",
     "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^1.6.0",
     "gulp-uglify": "^1.2.0",
     "gulp-util": "^3.0.4",
     "jshint-stylish": "^1.0.1",
-    "systemjs-builder": "^0.10.6"
+    "systemjs-builder": "^0.10.6",
+    "vinyl-source-stream": "^1.1.0"
   }
 }

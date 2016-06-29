@@ -1,9 +1,11 @@
-import angular from 'angular';
-import Logger from './logger';
+//import Logger from './logger';
 import Area from './area';
 import configs from './configs';
 import BaseCtrl from './baseCtrl';
 import RouteCtrl from './routeCtrl';
+
+if (!angular)
+  angular = window.angular;
 
 /**
  * Angular application.
@@ -239,7 +241,7 @@ class Base {
         // its usefulness is in sending
         // the log payload to the server
         // in a convenient way.
-        this.logger = undefined;
+        //this.logger = undefined;
 
         // the key name added to $rootScope.
         this.areaKey = '$area';
@@ -264,11 +266,11 @@ class Base {
             this.componentBase = this.viewBase;
 
         // check if logger is enabled.
-        if(this.logger !== false)
-            this.logger = this.logger || true;
-
-        // create logger instance.
-        this.log = new Logger(this.logger, this.module);
+        // if(this.logger !== false)
+        //     this.logger = this.logger || true;
+        //
+        // // create logger instance.
+        // this.log = new Logger(this.logger, this.module);
 
         // globalize logger if enabled.
         if(this.log.options.globalize !== false)

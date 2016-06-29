@@ -1,13 +1,13 @@
 {
   "name": "basap",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "homepage": "https://github.com/origin1tech/basap",
   "authors": [
     "Origin1 Technologies <origin1tech@gmail.com>"
   ],
   "description": "Angular base application generator.",
   "main": [
-    "./dist/app.js"
+    "./dist/bower.js"
   ],
   "keywords": [
     "Angular",
@@ -20,14 +20,22 @@
   "ignore": [
     "**/.*",
     "node_modules",
+    "jspm_packages",
+    "jspm.config.js",
+    "config.js",
+    "index.html",
     "bower_components",
+    "wercker.yml",
     "nbproject",
     "idea",
     "test",
     "tests",
     "gulpfile.js",
     "src",
-    "package.json"
+    "package.json",
+    "server.js",
+    "img",
+    "example"
   ],
   "dependencies": {}
 }

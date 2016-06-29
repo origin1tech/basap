@@ -2,6 +2,10 @@ var gulp = require('gulp'),
     plugins = require('gulp-load-plugins')(),
     path = require('path'),
     ls = require('gulp-live-server'),
+    sourcemaps = require('gulp-sourcemaps'),
+    source = require('vinyl-source-stream'),
+    browserify = require('browserify'),
+    babelify = require('babelify'),
     util = plugins.util,
     del = require('del'),
     Builder = require('systemjs-builder'),
@@ -43,42 +47,48 @@ gulp.task('lint', function () {
 // to build up your application.
 gulp.task('bundle', ['clean'], function (cb) {
 
-    var builder = new Builder();
-    var configFile = './config.js';
-    var opts = {
-        minify: false,
-        sourceMaps: true
-    };
-    builder.loadConfig(configFile)
-        .then(function () {
-            builder.config({baseURL: path.resolve('./')});
-            builder.build('example/app', './dist/app.js', opts)
-                .then(function () {
-                    builder.buildSFX('example/app', './dist/app.sfx.js', opts)
-                        .then(function() {
-                            opts.runtime = true;
-                            builder.buildSFX('example/app', './dist/app.runtime.js', opts)
-                                .then(function() {
-                                    return cb();
-                                })
-                                .catch(function(ex) {
-                                    util.log(util.colors.red('Bundle SFX Runtime:'), ex.message);
-                                    return cb();
-                                });
-                        })
-                        .catch(function(ex) {
-                            util.log(util.colors.red('Bundle SFX:'), ex.message);
-                            return cb();
-                        });
-                })
-                .catch(function(ex) {
-                    util.log(util.colors.red('Bundle:'), ex.message);
-                    return cb();
-                });
-        })
-        .catch(function(ex) {
-            util.log(util.colors.red('Bundle Config:'), ex.message);
-        });
+  return browserify('./src/base.js')
+        .transform(babelify, { presets: ['es2015']})
+        .bundle()
+        .pipe(source('basap.js'))
+        .pipe(gulp.dest('dist'));
+
+    // var builder = new Builder();
+    // var configFile = './config.js';
+    // var opts = {
+    //     minify: false,
+    //     sourceMaps: true
+    // };
+    // builder.loadConfig(configFile)
+    //     .then(function () {
+    //         builder.config({baseURL: path.resolve('./')});
+    //         builder.build('./src/base', './dist/basap.js', opts)
+    //             .then(function () {
+    //                 // builder.buildSFX('./src/base.sfx.js', opts)
+    //                 //     .then(function() {
+    //                 //         opts.runtime = true;
+    //                 //         builder.buildSFX('./src/app.runtime.js', opts)
+    //                 //             .then(function() {
+    //                 //                 return cb();
+    //                 //             })
+    //                 //             .catch(function(ex) {
+    //                 //                 util.log(util.colors.red('Bundle SFX Runtime:'), ex.message);
+    //                 //                 return cb();
+    //                 //             });
+    //                 //     })
+    //                 //     .catch(function(ex) {
+    //                 //         util.log(util.colors.red('Bundle SFX:'), ex.message);
+    //                 //         return cb();
+    //                 //     });
+    //             })
+    //             .catch(function(ex) {
+    //                 util.log(util.colors.red('Bundle:'), ex.message);
+    //                 return cb();
+    //             });
+    //     })
+    //     .catch(function(ex) {
+    //         util.log(util.colors.red('Bundle Config:'), ex.message);
+    //     });
 
 });
 
