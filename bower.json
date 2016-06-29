@@ -1,0 +1,33 @@
+{
+  "name": "basap",
+  "version": "0.1.22",
+  "homepage": "https://github.com/origin1tech/basap",
+  "authors": [
+    "Origin1 Technologies <origin1tech@gmail.com>"
+  ],
+  "description": "Angular base application generator.",
+  "main": [
+    "./dist/app.js"
+  ],
+  "keywords": [
+    "Angular",
+    "Application Builder",
+    "Components",
+    "Angular UI Router",
+    "Angular Router"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "nbproject",
+    "idea",
+    "test",
+    "tests",
+    "gulpfile.js",
+    "src",
+    "package.json"
+  ],
+  "dependencies": {}
+}

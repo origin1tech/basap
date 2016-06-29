@@ -765,15 +765,19 @@ Base.instance = undefined;
  * @private
  * @returns {Base}
  */
-function get(ns, deps, options) {
+function getInstance(ns, deps, options) {
 
     if(!Base.instance){
         Base.instance = new Base(ns, deps, options);
         Base.constructor = null;
     }
+
     return Base.instance;
+
 }
 
+if (window)
+  window.basap = getInstance;
 
 
-export default get;
+export default getInstance;
