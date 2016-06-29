@@ -778,8 +778,5 @@ function getInstance(ns, deps, options) {
 
 }
 
-if (window)
-  window.basap = getInstance;
 
-
-export default getInstance;
+window.basap = getInstance;

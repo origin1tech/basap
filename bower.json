@@ -7,7 +7,7 @@
   ],
   "description": "Angular base application generator.",
   "main": [
-    "./dist/bower.js"
+    "./dist/basap.js"
   ],
   "keywords": [
     "Angular",
