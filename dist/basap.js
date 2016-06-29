@@ -1307,7 +1307,8 @@ var Base = function () {
         // this.log = new Logger(this.logger, this.module);
 
         // globalize logger if enabled.
-        if (this.log.options.globalize !== false) window.$log = this.log;
+        // if(this.log.options.globalize !== false)
+        //     window.$log = this.log;
 
         // if globalized add to window
         // prefixed by $ (default: $app)
